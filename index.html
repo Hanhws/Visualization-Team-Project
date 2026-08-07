@@ -59,7 +59,8 @@
   .country { fill:var(--land); stroke:#000; stroke-width:.4px; }
   .country.clickable { fill:var(--land-lit); cursor:pointer;
     transition:fill .2s, transform .2s; transform-box:fill-box; transform-origin:center; }
-  .country.clickable:hover { fill:var(--nf-red); transform:scale(1.09); }
+  .country.clickable:hover,
+  .country.clickable.hot { fill:var(--nf-red); transform:scale(1.09); }
   .maphint { position:absolute; bottom:26px; left:50%; transform:translateX(-50%);
     z-index:5; color:#bbb; font-size:14px; background:rgba(0,0,0,.5);
     padding:10px 18px; border-radius:999px; }
@@ -98,7 +99,7 @@
   /* ---------- 검색 화면 ---------- */
   #searchView { background:radial-gradient(1200px 600px at 50% -10%, #1a1a1a, #000 60%); }
   .searchWrap { position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; padding-top:16vh; }
+    align-items:center; padding-top:16vh; overflow-y:auto; }
   .searchWrap.searched { padding-top:96px; }
   .ask { font-size:clamp(24px,4vw,44px); font-weight:800; text-align:center;
     margin-bottom:26px; letter-spacing:-.5px; }
@@ -155,7 +156,7 @@
 <!-- ===================== 나라별 작품 화면 ===================== -->
 <section id="countryView" class="view">
   <div class="topbar"><span class="back" onclick="openMap()">← 지도로</span></div>
-  <div class="scroll">
+  <div class="scroll" id="cvScroll">
     <div class="headline" id="cvTitle"></div>
     <div class="subline" id="cvSub"></div>
     <div class="grid" id="cvGrid"></div>
@@ -205,17 +206,33 @@ function card(p){
     <div class="cap"><div class="t">${p.title}</div><div class="m">${meta}</div></div></div>`;
 }
 
+/* ---------------- 스크롤 시 조금씩 렌더 ---------------- */
+function renderMore(grid, state, batch=48){
+  const next = state.list.slice(state.shown, state.shown + batch);
+  if(!next.length) return;
+  grid.insertAdjacentHTML('beforeend', next.map(card).join(''));
+  state.shown += next.length;
+}
+function nearBottom(el){ return el.scrollTop + el.clientHeight > el.scrollHeight - 700; }
+
 /* ---------------- 나라별 화면 ---------------- */
+let cvState = {list:[], shown:0};
 function openCountry(code){
   const c = DATA.countries[code]; if(!c) return;
   $('#cvTitle').innerHTML = `${c.name} <b>넷플릭스</b>`;
-  $('#cvSub').textContent = `한국에서는 볼 수 없는 작품 ${c.count}편`;
-  $('#cvGrid').innerHTML = c.programs.map(card).join('');
-  show('countryView'); $('.scroll').scrollTop = 0;
+  $('#cvSub').textContent = `한국에서는 볼 수 없는 작품 ${c.count.toLocaleString()}편`;
+  cvState = {list:c.programs, shown:0};
+  $('#cvGrid').innerHTML = '';
+  renderMore($('#cvGrid'), cvState, 60);
+  show('countryView'); $('#cvScroll').scrollTop = 0;
 }
+$('#cvScroll').addEventListener('scroll', e => {
+  if(nearBottom(e.target)) renderMore($('#cvGrid'), cvState);
+});
 
 /* ---------------- 검색 화면 ---------------- */
 const sIn = $('#searchInput');
+let srState = {list:[], shown:0};
 sIn.addEventListener('input', () => {
   const q = sIn.value.trim().toLowerCase();
   const wrap = $('#searchWrap');
@@ -223,8 +240,13 @@ sIn.addEventListener('input', () => {
   wrap.classList.add('searched');
   const hits = DATA.all.filter(p =>
     (p.title||'').toLowerCase().includes(q) || (p.genres||'').toLowerCase().includes(q));
-  $('#srGrid').innerHTML = hits.slice(0,60).map(card).join('');
+  srState = {list:hits, shown:0};
+  $('#srGrid').innerHTML = '';
+  renderMore($('#srGrid'), srState, 60);
   $('#srEmpty').textContent = hits.length ? '' : `'${sIn.value}' 에 대한 결과가 없어요.`;
+});
+$('#searchWrap').addEventListener('scroll', e => {
+  if(nearBottom(e.target)) renderMore($('#srGrid'), srState);
 });
 
 /* ---------------- 지도 그리기 (D3) ---------------- */
@@ -252,17 +274,24 @@ function drawMap(svgSel, feats, {globe=false, interactive=false}={}){
     });
 
   if(interactive){
+    const t = $('#tooltip');
     paths.filter(d=>idToCode[String(d.id)])
-      .on('mousemove', (ev,d) => {
+      .style('cursor','pointer')
+      .on('mouseenter', function(ev,d){
+        const el = d3.select(this);
+        el.raise().classed('hot', true);           // 색·확대 (CSS .hot)
         const c = DATA.countries[idToCode[String(d.id)]];
-        const t = $('#tooltip');
-        t.style.left = ev.clientX+'px'; t.style.top = ev.clientY+'px';
         t.innerHTML = `${c.name}<small>한국 미제공 ${c.count}편 · 클릭</small>`;
         t.style.opacity = 1;
       })
-      .on('mouseover', function(){ this.parentNode.appendChild(this); })
-      .on('mouseout', () => $('#tooltip').style.opacity = 0)
-      .on('click', (ev,d) => openCountry(idToCode[String(d.id)]));
+      .on('mousemove', function(ev){
+        t.style.left = ev.clientX+'px'; t.style.top = ev.clientY+'px';
+      })
+      .on('mouseleave', function(){
+        d3.select(this).classed('hot', false);
+        t.style.opacity = 0;
+      })
+      .on('click', function(ev,d){ openCountry(idToCode[String(d.id)]); });
   }
 
   if(globe){                                  // 지구본 천천히 회전
@@ -275,13 +304,21 @@ function drawMap(svgSel, feats, {globe=false, interactive=false}={}){
 }
 
 /* ---------------- 초기화 ---------------- */
+let WORLD_FEATS = null, bigDrawn = false;
+
+// 지도 화면은 열릴 때(실제 크기 확보 후) 그린다 → 인터랙션 정상 동작
+const _openMap = openMap;
+openMap = function(){
+  show('mapView');
+  if(WORLD_FEATS && !bigDrawn){ drawMap('#bigMap', WORLD_FEATS, {interactive:true}); bigDrawn = true; }
+};
+
 d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
   .then(world => {
-    const feats = topojson.feature(world, world.objects.countries).features;
+    WORLD_FEATS = topojson.feature(world, world.objects.countries).features;
     $('#loading').style.display = 'none';
-    drawMap('#miniMap', feats, {interactive:false});
-    drawMap('#miniGlobe', feats, {globe:true});
-    drawMap('#bigMap', feats, {interactive:true});
+    drawMap('#miniMap', WORLD_FEATS, {interactive:false});
+    drawMap('#miniGlobe', WORLD_FEATS, {globe:true});
     // 미니맵에서도 대상 국가는 살짝 밝게
     d3.select('#miniMap').selectAll('path')
       .filter(d=>idToCode[String(d.id)]).attr('fill','var(--nf-red)').attr('opacity',.85);

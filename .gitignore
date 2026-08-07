@@ -10,3 +10,6 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# 전체 카탈로그 원본(24MB, 한국 포함) — 용량 커서 제외. 팀 공유는 nerfle_only_abroad.csv 사용
+data/nerfle_titles.csv

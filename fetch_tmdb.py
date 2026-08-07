@@ -60,8 +60,9 @@ COUNTRIES = {
 # 수집할 미디어 종류: "movie", "tv" 중 원하는 것
 MEDIA_TYPES = ["movie", "tv"]
 
-# 나라·종류별로 가져올 페이지 수 (1페이지 = 20개). 처음엔 3으로 가볍게 테스트 권장.
-MAX_PAGES = 3
+# 나라·종류별로 가져올 페이지 수 (1페이지 = 20개). TMDB discover 최대 500페이지.
+# 전량 수집하려면 크게(예: 500) 두면 됨. total_pages 를 만나면 자동으로 멈춤.
+MAX_PAGES = 500
 
 NETFLIX_PROVIDER_ID = 8       # TMDB 기준 넷플릭스 provider id
 LANGUAGE = "ko-KR"            # 제목·줄거리 언어 (없으면 원어로 옴)
@@ -120,7 +121,7 @@ def discover_titles(country_code, media_type):
         results.extend(data.get("results", []))
         if page >= data.get("total_pages", 1):
             break
-        time.sleep(0.25)   # 예의상 살짝 쉬기
+        time.sleep(0.05)   # 예의상 살짝 쉬기 (429 나면 자동 재시도)
     return results
 
 
