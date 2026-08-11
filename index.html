@@ -187,7 +187,7 @@
 <script>
 const DATA = window.NERFLE;
 const idToCode = {};                         // topojson 숫자id -> ISO2
-Object.values(DATA.countries).forEach(c => { if(c.id) idToCode[c.id] = c.iso2; });
+Object.values(DATA.countries).forEach(c => { if(c.id) idToCode[String(parseInt(c.id,10))] = c.iso2; });
 
 const $ = s => document.querySelector(s);
 function show(id){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -273,18 +273,18 @@ function drawMap(svgSel, feats, {globe=false, interactive=false, spin=false}={})
   const paths = g.selectAll('path').data(feats).join('path')
     .attr('d', path)
     .attr('class', d => {
-      const on = interactive && idToCode[String(d.id)];
+      const on = interactive && idToCode[String(parseInt(d.id,10))];
       return 'country' + (on ? ' clickable' : '');
     });
 
   if(interactive){
     const t = $('#tooltip');
-    paths.filter(d=>idToCode[String(d.id)])
+    paths.filter(d=>idToCode[String(parseInt(d.id,10))])
       .style('cursor','pointer')
       .on('mouseenter', function(ev,d){
         const el = d3.select(this);
         el.raise().classed('hot', true);           // 색·확대 (CSS .hot)
-        const c = DATA.countries[idToCode[String(d.id)]];
+        const c = DATA.countries[idToCode[String(parseInt(d.id,10))]];
         t.innerHTML = `${c.name}<small>한국 미제공 ${c.count}편 · 클릭</small>`;
         t.style.opacity = 1;
       })
@@ -295,7 +295,7 @@ function drawMap(svgSel, feats, {globe=false, interactive=false, spin=false}={})
         d3.select(this).classed('hot', false);
         t.style.opacity = 0;
       })
-      .on('click', function(ev,d){ openCountry(idToCode[String(d.id)]); });
+      .on('click', function(ev,d){ openCountry(idToCode[String(parseInt(d.id,10))]); });
   }
 
   if(globe){                                  // 지구본 천천히 회전
@@ -323,7 +323,7 @@ openMap = function(){
   if(WORLD_FEATS && !bigDrawn){ drawMap('#bigMap', WORLD_FEATS, {interactive:true}); bigDrawn = true; }
 };
 
-d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
   .then(world => {
     WORLD_FEATS = topojson.feature(world, world.objects.countries).features;
     $('#loading').style.display = 'none';
@@ -331,7 +331,7 @@ d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
     drawMap('#miniGlobe', WORLD_FEATS, {globe:true});
     // 미니맵 대상 국가: 빨갛게 맥동(.target CSS 애니메이션)
     d3.select('#miniMap').selectAll('path')
-      .filter(d=>idToCode[String(d.id)]).classed('target', true);
+      .filter(d=>idToCode[String(parseInt(d.id,10))]).classed('target', true);
   })
   .catch(() => { $('#loading').textContent = '지도를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'; });
 
