@@ -7,335 +7,1089 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 <style>
-  :root { --nf-red:#E50914; --bg:#000; --land:#3a3a3a; --land-lit:#555; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  html,body { height:100%; background:var(--bg); color:#fff;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",sans-serif; }
-  body { overflow:hidden; }
-  .view { position:fixed; inset:0; display:none; }
-  .view.active { display:block; }
+  :root{
+    --nf-red:#E50914; --nf-red-d:#b20710;
+    --bg:#0b0b0b; --surface:#161616; --surface-2:#1f1f1f; --line:#2a2a2a;
+    --ink:#fff; --ink-2:#c9c9c9; --muted:#8a8a8a;
+    --land:#333; --land-lit:#555;
+    /* dataviz dark ink/chrome */
+    --grid:#2c2c2a; --axis:#383835;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI","Noto Sans KR",sans-serif;}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#333;border-radius:8px}
+  ::-webkit-scrollbar-track{background:transparent}
 
-  /* ---------- 첫 화면 (좌:지도 / 우:지구본) ---------- */
-  #landing { display:flex; }
-  #landing.active { display:flex; }
-  .half { position:relative; flex:1; height:100%; cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-    overflow:hidden; transition:flex .5s ease; }
-  .half::after { content:""; position:absolute; inset:0; background:rgba(0,0,0,.35);
-    transition:background .4s; }
-  .half:hover::after { background:rgba(0,0,0,.05); }
-  .half:hover { flex:1.25; }
-  .half .divider { position:absolute; right:0; top:0; bottom:0; width:1px;
-    background:rgba(255,255,255,.12); }
-  .half svg { width:100%; height:100%; display:block; }
-  .half .caption { position:absolute; z-index:3; text-align:center;
-    pointer-events:none; padding:0 24px; }
-  .half .caption h2 { font-size:clamp(22px,3vw,40px); font-weight:800; letter-spacing:-.5px; }
-  .half .caption p  { margin-top:10px; color:#cfcfcf; font-size:clamp(13px,1.2vw,17px); }
-  .half .caption .go { margin-top:18px; display:inline-block; font-size:13px;
-    color:#fff; border:1px solid rgba(255,255,255,.5); border-radius:999px;
-    padding:8px 18px; transition:.25s; }
-  .half:hover .caption .go { background:var(--nf-red); border-color:var(--nf-red); }
+  /* ---------------- 상단 내비 ---------------- */
+  .nav{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;gap:6px;
+    padding:12px 22px;background:linear-gradient(180deg,rgba(0,0,0,.92),rgba(0,0,0,.55) 70%,transparent);}
+  .nav .logo{color:var(--nf-red);font-weight:900;letter-spacing:2px;font-size:22px;margin-right:14px;cursor:pointer}
+  .nav a.tab{color:var(--ink-2);font-size:14px;font-weight:600;padding:8px 12px;border-radius:8px;transition:.15s;white-space:nowrap}
+  .nav a.tab:hover{color:#fff;background:rgba(255,255,255,.08)}
+  .nav a.tab.active{color:#fff}
+  .nav a.tab.active::after{content:"";display:block;height:2px;background:var(--nf-red);border-radius:2px;margin-top:4px}
+  .nav .spacer{flex:1}
+  .nav .navsearch{display:flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:999px;padding:7px 14px;color:var(--muted);font-size:13px;cursor:text}
+  .nav .navsearch:hover{border-color:#444}
+  .nav .wish-btn{position:relative;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;
+    padding:8px 14px;color:#fff;font-size:13px;font-weight:700}
+  .nav .wish-btn .cnt{color:var(--nf-red)}
+  @media(max-width:900px){ .nav .tab-text{display:none} .nav{gap:2px;padding:10px 12px} }
 
-  .brand { position:absolute; top:26px; left:50%; transform:translateX(-50%);
-    z-index:5; text-align:center; pointer-events:none; }
-  .brand .logo { color:var(--nf-red); font-weight:900; letter-spacing:3px;
-    font-size:clamp(20px,2.4vw,30px); }
-  .brand .sub { color:#9a9a9a; font-size:12px; margin-top:4px; letter-spacing:.5px; }
+  .view{display:none;min-height:100vh}
+  .view.active{display:block}
+  .page{max-width:1400px;margin:0 auto;padding:92px 34px 70px}
+  @media(max-width:760px){ .page{padding:80px 16px 50px} }
+  .h1{font-size:clamp(24px,3vw,36px);font-weight:800;letter-spacing:-.5px}
+  .h1 b{color:var(--nf-red)}
+  .sub{color:var(--muted);margin-top:8px;font-size:15px}
+  .section-t{font-size:20px;font-weight:800;margin:34px 0 14px}
 
-  /* ---------- 공통 상단바 ---------- */
-  .topbar { position:absolute; top:0; left:0; right:0; z-index:10;
-    display:flex; align-items:center; gap:16px; padding:18px 26px;
-    background:linear-gradient(180deg,rgba(0,0,0,.85),rgba(0,0,0,0)); }
-  .back { cursor:pointer; color:#fff; font-size:14px; font-weight:600;
-    border:1px solid rgba(255,255,255,.3); border-radius:999px; padding:8px 16px;
-    background:rgba(0,0,0,.3); transition:.2s; }
-  .back:hover { background:var(--nf-red); border-color:var(--nf-red); }
-  .topbar .title { font-weight:800; font-size:18px; }
-  .topbar .title b { color:var(--nf-red); }
+  /* ---------------- 홈 ---------------- */
+  #home .hero{position:relative;height:64vh;min-height:420px;display:flex}
+  .hero .half{position:relative;flex:1;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;transition:flex .5s}
+  .hero .half::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.45);transition:.4s}
+  .hero .half:hover{flex:1.3}
+  .hero .half:hover::after{background:rgba(0,0,0,.12)}
+  .hero svg{width:100%;height:100%;display:block}
+  .hero .cap{position:absolute;z-index:3;text-align:center;pointer-events:none;padding:0 20px}
+  .hero .cap h2{font-size:clamp(20px,2.6vw,34px);font-weight:800}
+  .hero .cap p{margin-top:8px;color:#d5d5d5;font-size:14px}
+  .hero .cap .go{margin-top:14px;display:inline-block;font-size:13px;border:1px solid rgba(255,255,255,.55);
+    border-radius:999px;padding:7px 16px}
+  .hero .half:hover .cap .go{background:var(--nf-red);border-color:var(--nf-red)}
+  .brand-mark{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:5;text-align:center;pointer-events:none}
+  .brand-mark .l{color:var(--nf-red);font-weight:900;letter-spacing:4px;font-size:clamp(26px,3vw,40px)}
+  .brand-mark .s{color:#aaa;font-size:12px;margin-top:2px}
 
-  /* ---------- 지도 화면 ---------- */
-  #mapView svg { width:100%; height:100%; background:var(--bg); }
-  .country { fill:var(--land); stroke:#000; stroke-width:.4px; }
-  /* 클릭 가능한 나라: 평소엔 회색, 마우스 올릴 때만 빨강+확대 */
-  .country.clickable { fill:var(--land); cursor:pointer;
-    transition:fill .2s, transform .2s; transform-box:fill-box; transform-origin:center; }
-  .country.clickable:hover,
-  .country.clickable.hot { fill:var(--nf-red); transform:scale(1.09);
-    filter:drop-shadow(0 0 6px rgba(229,9,20,.8)); }
-  /* 첫 화면 미니맵 대상 국가: 고정 붉은색(깜빡임 없음) */
-  #miniMap .target { fill:#a3242c; }
-  .maphint { position:absolute; bottom:26px; left:50%; transform:translateX(-50%);
-    z-index:5; color:#bbb; font-size:14px; background:rgba(0,0,0,.5);
-    padding:10px 18px; border-radius:999px; }
-  .maphint b { color:var(--nf-red); }
-  #tooltip { position:fixed; z-index:50; pointer-events:none; opacity:0;
-    background:var(--nf-red); color:#fff; font-weight:700; font-size:14px;
-    padding:7px 12px; border-radius:8px; transform:translate(-50%,-140%);
-    white-space:nowrap; transition:opacity .12s; box-shadow:0 6px 20px rgba(0,0,0,.5); }
-  #tooltip small { display:block; font-weight:500; opacity:.9; font-size:11px; }
+  .statrow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:26px}
+  @media(max-width:760px){ .statrow{grid-template-columns:repeat(2,1fr)} }
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .stat .v{font-size:30px;font-weight:800;letter-spacing:-1px}
+  .stat .v b{color:var(--nf-red)}
+  .stat .k{color:var(--muted);font-size:13px;margin-top:4px}
 
-  /* ---------- 포스터 그리드 (나라별 / 검색) ---------- */
-  .scroll { position:absolute; inset:0; overflow-y:auto; padding:96px 40px 60px; }
-  .headline { margin-bottom:8px; font-size:clamp(24px,3vw,38px); font-weight:800; }
-  .headline b { color:var(--nf-red); }
-  .subline { color:#9a9a9a; margin-bottom:28px; font-size:15px; }
-  .grid { display:grid; grid-template-columns:repeat(5,1fr); gap:22px 18px; }
-  @media (max-width:1100px){ .grid{ grid-template-columns:repeat(4,1fr);} }
-  @media (max-width:760px){ .grid{ grid-template-columns:repeat(2,1fr);} .scroll{padding:90px 20px 50px;} }
-  .card { cursor:default; }
-  .poster { position:relative; width:100%; aspect-ratio:2/3; border-radius:8px;
-    overflow:hidden; background:#161616; box-shadow:0 6px 18px rgba(0,0,0,.5);
-    transition:transform .2s; }
-  .card:hover .poster { transform:scale(1.05); }
-  .poster img { width:100%; height:100%; object-fit:cover; display:block; }
-  .poster .noimg { display:flex; align-items:center; justify-content:center;
-    height:100%; color:#666; font-size:12px; text-align:center; padding:10px; }
-  .poster .badge { position:absolute; top:8px; left:8px; background:rgba(0,0,0,.7);
-    color:#ffd54a; font-size:11px; font-weight:700; padding:3px 7px; border-radius:5px; }
-  .poster .type { position:absolute; top:8px; right:8px; background:var(--nf-red);
-    color:#fff; font-size:10px; font-weight:700; padding:3px 6px; border-radius:5px; }
-  .cap { margin-top:9px; }
-  .cap .t { font-size:14px; font-weight:600; line-height:1.3;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .cap .m { margin-top:3px; color:#8a8a8a; font-size:12px; }
+  .daily{display:flex;gap:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:18px;margin-top:16px;align-items:center}
+  .daily img{width:120px;aspect-ratio:2/3;object-fit:cover;border-radius:10px;flex:none;background:#000}
+  .daily .info{flex:1;min-width:0}
+  .daily .tag{color:var(--nf-red);font-weight:800;font-size:12px;letter-spacing:1px}
+  .daily h3{font-size:22px;font-weight:800;margin:6px 0}
+  .daily .meta{color:var(--muted);font-size:13px}
+  .daily .ov{color:var(--ink-2);font-size:13px;margin-top:8px;line-height:1.5;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 
-  /* ---------- 검색 화면 ---------- */
-  #searchView { background:radial-gradient(1200px 600px at 50% -10%, #1a1a1a, #000 60%); }
-  .searchWrap { position:absolute; inset:0; display:flex; flex-direction:column;
-    align-items:center; padding-top:16vh; overflow-y:auto; }
-  .searchWrap.searched { padding-top:96px; }
-  .ask { font-size:clamp(24px,4vw,44px); font-weight:800; text-align:center;
-    margin-bottom:26px; letter-spacing:-.5px; }
-  .ask b { color:var(--nf-red); }
-  .searchbox { width:min(680px,88vw); position:relative; }
-  .searchbox input { width:100%; font-size:18px; padding:18px 54px 18px 22px;
-    border-radius:14px; border:1px solid #333; background:#111; color:#fff;
-    outline:none; transition:border .2s; }
-  .searchbox input:focus { border-color:var(--nf-red); }
-  .searchbox .ico { position:absolute; right:18px; top:50%; transform:translateY(-50%);
-    color:#777; font-size:20px; }
-  .results { width:min(1200px,92vw); margin-top:34px; }
-  .empty { color:#888; text-align:center; margin-top:40px; font-size:15px; }
-  .loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-    color:#888; z-index:100; }
+  .quick{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+  @media(max-width:760px){ .quick{grid-template-columns:repeat(2,1fr)} }
+  .qcard{background:linear-gradient(135deg,var(--surface-2),var(--surface));border:1px solid var(--line);
+    border-radius:14px;padding:20px;cursor:pointer;transition:.15s}
+  .qcard:hover{border-color:var(--nf-red);transform:translateY(-2px)}
+  .qcard .ic{font-size:26px}
+  .qcard .t{font-weight:800;margin-top:10px}
+  .qcard .d{color:var(--muted);font-size:12px;margin-top:4px}
+
+  /* ---------------- 카드 그리드 ---------------- */
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:22px 18px}
+  @media(max-width:1100px){ .grid{grid-template-columns:repeat(4,1fr)} }
+  @media(max-width:760px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  .card{cursor:pointer}
+  .poster{position:relative;width:100%;aspect-ratio:2/3;border-radius:8px;overflow:hidden;background:#161616;
+    box-shadow:0 6px 18px rgba(0,0,0,.5);transition:transform .18s}
+  .card:hover .poster{transform:scale(1.05)}
+  .poster img{width:100%;height:100%;object-fit:cover;display:block}
+  .poster .noimg{display:flex;align-items:center;justify-content:center;height:100%;color:#666;font-size:12px;text-align:center;padding:10px}
+  .poster .badge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.72);color:#ffd54a;font-size:11px;font-weight:700;padding:3px 7px;border-radius:5px}
+  .poster .tr{position:absolute;top:8px;right:8px;display:flex;gap:4px;align-items:center}
+  .poster .type{background:var(--nf-red);color:#fff;font-size:10px;font-weight:700;padding:3px 6px;border-radius:5px}
+  .poster .age{color:#fff;font-size:10px;font-weight:800;padding:3px 6px;border-radius:5px;line-height:1;border:1px solid rgba(255,255,255,.3)}
+  .age.a19{background:#c0392b}.age.a15{background:#e67e22}.age.a12{background:#2d8a4e}.age.aALL{background:#3a6ea5}
+  .poster .hot{position:absolute;bottom:8px;left:8px;background:linear-gradient(90deg,#ff9800,#E50914);color:#fff;font-size:10px;font-weight:800;padding:3px 7px;border-radius:5px}
+  .poster .rare{position:absolute;bottom:8px;left:8px;background:rgba(20,20,20,.85);color:#7fd7ff;font-size:10px;font-weight:800;padding:3px 7px;border-radius:5px;border:1px solid #2a6b82}
+  .poster .fav{position:absolute;bottom:8px;right:8px;font-size:18px;filter:drop-shadow(0 1px 2px #000)}
+  .cap{margin-top:9px}
+  .cap .t{font-size:14px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .cap .m{margin-top:3px;color:#8a8a8a;font-size:12px}
+
+  /* ---------------- 필터 바 ---------------- */
+  .filters{position:sticky;top:64px;z-index:20;background:rgba(11,11,11,.92);backdrop-filter:blur(6px);
+    border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:22px}
+  .filters .row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+  .filters .row + .row{margin-top:12px}
+  .fgroup{display:flex;align-items:center;gap:8px}
+  .flabel{color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap}
+  .chip{border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2);font-size:12px;font-weight:700;
+    padding:6px 12px;border-radius:999px;transition:.12s}
+  .chip:hover{border-color:#555;color:#fff}
+  .chip.on{background:var(--nf-red);border-color:var(--nf-red);color:#fff}
+  .preset{border:1px dashed #444;background:transparent;color:var(--ink-2);font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px}
+  .preset:hover{border-color:var(--nf-red);color:#fff}
+  select,input[type=search]{background:var(--surface-2);border:1px solid var(--line);color:#fff;border-radius:8px;padding:8px 10px;font-size:13px;outline:none}
+  input[type=range]{accent-color:var(--nf-red)}
+  .rangeval{color:#fff;font-size:12px;font-weight:700;min-width:30px;text-align:center}
+  .result-n{color:var(--muted);font-size:13px;margin-left:auto}
+  .searchbig{width:100%;background:var(--surface-2);border:1px solid var(--line);color:#fff;border-radius:10px;
+    padding:12px 14px;font-size:15px;outline:none}
+  .searchbig:focus{border-color:var(--nf-red)}
+  .empty{color:#888;text-align:center;margin:50px 0;font-size:15px}
+
+  /* ---------------- 지도 ---------------- */
+  #mapSvg{width:100%;height:calc(100vh - 180px);min-height:420px;background:#0b0b0b;border:1px solid var(--line);border-radius:14px}
+  .country{stroke:#000;stroke-width:.4px}
+  .country.dim{fill:#242424}
+  .country.click{cursor:pointer;transition:fill .15s,transform .15s;transform-box:fill-box;transform-origin:center}
+  .country.click:hover,.country.click.hot{filter:drop-shadow(0 0 6px rgba(229,9,20,.8));transform:scale(1.06)}
+  .maplegend{display:flex;align-items:center;gap:10px;margin-top:10px;color:var(--muted);font-size:12px;flex-wrap:wrap}
+  .legendbar{height:10px;width:160px;border-radius:5px;background:linear-gradient(90deg,#3a1113,#7a1119,#E50914)}
+  #tooltip{position:fixed;z-index:60;pointer-events:none;opacity:0;background:var(--nf-red);color:#fff;font-weight:700;
+    font-size:13px;padding:7px 11px;border-radius:8px;transform:translate(-50%,-140%);white-space:nowrap;
+    transition:opacity .1s;box-shadow:0 6px 20px rgba(0,0,0,.6)}
+  #tooltip small{display:block;font-weight:500;opacity:.9;font-size:11px}
+
+  /* ---------------- 나라 비교 ---------------- */
+  .cmp-pick{display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-bottom:8px}
+  .cmp-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:20px}
+  @media(max-width:900px){ .cmp-cols{grid-template-columns:1fr} }
+  .cmp-col{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:120px}
+  .cmp-col h4{font-size:15px;font-weight:800;margin-bottom:4px}
+  .cmp-col .n{color:var(--muted);font-size:12px;margin-bottom:12px}
+  .cmp-list{display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow:auto}
+  .cmp-item{display:flex;gap:10px;align-items:center;cursor:pointer;padding:6px;border-radius:8px}
+  .cmp-item:hover{background:var(--surface-2)}
+  .cmp-item img{width:34px;aspect-ratio:2/3;object-fit:cover;border-radius:4px;flex:none;background:#000}
+  .cmp-item .t{font-size:13px;font-weight:600;line-height:1.25}
+  .cmp-item .mm{color:var(--muted);font-size:11px}
+
+  /* ---------------- 인사이트(대시보드) ---------------- */
+  .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:8px}
+  @media(max-width:900px){ .dash-grid{grid-template-columns:1fr} }
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px}
+  .panel h3{font-size:15px;font-weight:800;margin-bottom:4px}
+  .panel .cap2{color:var(--muted);font-size:12px;margin-bottom:16px}
+  .panel.full{grid-column:1/-1}
+  .bar-row{display:grid;grid-template-columns:120px 1fr 52px;align-items:center;gap:10px;margin:9px 0;cursor:default}
+  .bar-row .lab{font-size:13px;color:var(--ink-2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar-track{background:#242424;border-radius:5px;height:16px;overflow:hidden}
+  .bar-fill{height:100%;background:var(--nf-red);border-radius:5px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+  .bar-row .val{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .bar-row:hover .bar-fill{background:#ff2b36}
+  .hero-num{display:flex;gap:26px;flex-wrap:wrap;margin-top:6px}
+  .hero-num .item .n{font-size:40px;font-weight:800;letter-spacing:-1.5px;color:#fff}
+  .hero-num .item .n b{color:var(--nf-red)}
+  .hero-num .item .l{color:var(--muted);font-size:13px;margin-top:2px}
+  .linewrap{position:relative}
+  .charttip{position:absolute;pointer-events:none;background:#000;border:1px solid #333;border-radius:8px;
+    padding:6px 9px;font-size:12px;opacity:0;transform:translate(-50%,-120%);white-space:nowrap;z-index:5}
+  .charttip b{color:var(--nf-red)}
+
+  /* ---------------- 위시리스트 / 여권 ---------------- */
+  .wl-tools{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 18px}
+  .btn{background:var(--surface-2);border:1px solid var(--line);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700}
+  .btn:hover{border-color:#555}
+  .btn.primary{background:var(--nf-red);border-color:var(--nf-red)}
+  .btn.primary:hover{background:var(--nf-red-d)}
+  .passport{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:8px}
+  #passportSvg{width:100%;height:44vh;min-height:300px}
+  .stamp-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .stamp{border:2px dashed var(--nf-red);color:#ff6b73;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:800;
+    transform:rotate(-4deg);background:rgba(229,9,20,.06)}
+  .cover-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px}
+  .cover-box .big{font-size:15px}
+  .cover-box .big b{color:var(--nf-red)}
+
+  /* ---------------- 상세 모달 ---------------- */
+  .modal{position:fixed;inset:0;z-index:80;display:none;align-items:flex-start;justify-content:center;
+    background:rgba(0,0,0,.72);backdrop-filter:blur(4px);overflow:auto;padding:50px 16px}
+  .modal.open{display:flex}
+  .sheet{width:min(860px,100%);background:#141414;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,.7)}
+  .sheet .top{display:flex;gap:20px;padding:22px}
+  .sheet .top img{width:180px;aspect-ratio:2/3;object-fit:cover;border-radius:10px;flex:none;background:#000}
+  @media(max-width:620px){ .sheet .top{flex-direction:column} .sheet .top img{width:130px} }
+  .sheet .info{flex:1;min-width:0}
+  .sheet h2{font-size:24px;font-weight:800;line-height:1.2}
+  .sheet .ot{color:var(--muted);font-size:13px;margin-top:3px}
+  .sheet .chips{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+  .sheet .g{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px}
+  .sheet .ovv{color:var(--ink-2);font-size:14px;line-height:1.6;margin:10px 0}
+  .sheet .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .sheet .rateline{display:flex;gap:16px;align-items:center;color:var(--ink-2);font-size:13px;margin-top:6px}
+  .sheet .rateline .star{color:#ffd54a;font-weight:800}
+  .avail{padding:0 22px 22px}
+  .avail h4{font-size:14px;font-weight:800;margin:6px 0 10px;color:#fff}
+  .avail .mapmini{width:100%;height:230px;background:#0b0b0b;border:1px solid var(--line);border-radius:12px}
+  .avail .cc{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;max-height:96px;overflow:auto}
+  .avail .cc span{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);font-size:11px;padding:4px 9px;border-radius:6px}
+  .closex{position:absolute;top:14px;right:16px;font-size:26px;color:#fff;background:rgba(0,0,0,.4);border:none;border-radius:50%;width:40px;height:40px;z-index:2}
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:#fff;color:#000;font-weight:700;
+    font-size:14px;padding:11px 20px;border-radius:999px;z-index:100;opacity:0;transition:opacity .2s;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  .toast.show{opacity:1}
+  .loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#888;z-index:100;pointer-events:none}
 </style>
 </head>
 <body>
 
-<!-- ===================== 첫 화면 ===================== -->
-<section id="landing" class="view active">
-  <div class="brand"><div class="logo">NERFLE</div>
-    <div class="sub">한국에서 볼 수 없는 넷플릭스</div></div>
+<!-- ===================== 내비 ===================== -->
+<nav class="nav">
+  <span class="logo" onclick="go('#/')">NERFLE</span>
+  <a class="tab" href="#/discover"><span class="tab-text">탐색</span><span class="only-ic" hidden>🎬</span></a>
+  <a class="tab" href="#/map">지도</a>
+  <a class="tab" href="#/compare">나라비교</a>
+  <a class="tab" href="#/insights">인사이트</a>
+  <span class="spacer"></span>
+  <span class="navsearch" onclick="go('#/discover');setTimeout(()=>document.getElementById('searchBig')?.focus(),60)">🔍 검색</span>
+  <a class="wish-btn" href="#/wishlist">찜 <span class="cnt" id="wishCount">0</span></a>
+</nav>
 
-  <div class="half" id="halfMap" onclick="openMap()">
-    <svg id="miniMap"></svg><div class="divider"></div>
-    <div class="caption">
-      <h2>국가별로 둘러보기</h2>
-      <p>한국엔 없는 작품이 있는 나라를 지도에서 선택하세요</p>
-      <span class="go">지도 열기 →</span>
+<!-- ===================== 홈 ===================== -->
+<section id="home" class="view">
+  <div class="hero">
+    <div class="brand-mark"><div class="l">NERFLE</div><div class="s">한국에서 볼 수 없는 넷플릭스</div></div>
+    <div class="half" onclick="go('#/map')"><svg id="miniMap"></svg>
+      <div class="cap"><h2>국가별로 둘러보기</h2><p>한국엔 없는 작품이 있는 나라를 지도에서 선택</p><span class="go">지도 열기 →</span></div>
+    </div>
+    <div class="half" onclick="go('#/discover')"><svg id="miniGlobe"></svg>
+      <div class="cap"><h2>작품으로 찾기</h2><p>취향·평점·연도로 숨은 작품을 발견</p><span class="go">탐색 열기 →</span></div>
+    </div>
+  </div>
+  <div class="page" style="padding-top:34px">
+    <div class="statrow" id="homeStats"></div>
+
+    <div class="section-t">🎲 오늘의 발견</div>
+    <div class="daily" id="dailyCard"></div>
+
+    <div class="section-t">바로 가기</div>
+    <div class="quick">
+      <div class="qcard" onclick="applyPreset('gem')"><div class="ic">💎</div><div class="t">숨은 명작</div><div class="d">평점 8.0+ · 소수 국가에만</div></div>
+      <div class="qcard" onclick="applyPreset('new')"><div class="ic">🆕</div><div class="t">2020년 이후 신작</div><div class="d">최근 공개된 미제공작</div></div>
+      <div class="qcard" onclick="applyPreset('retro')"><div class="ic">📼</div><div class="t">레트로</div><div class="d">2000년 이전 명작</div></div>
+      <div class="qcard" onclick="go('#/wishlist')"><div class="ic">🗺️</div><div class="t">내 넷플릭스 여권</div><div class="d">찜한 작품의 원산지 스탬프</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 탐색 ===================== -->
+<section id="discover" class="view"><div class="page">
+  <div class="h1"><b>한국 미제공</b> 작품 탐색</div>
+  <div class="sub" id="discSub"></div>
+
+  <div class="filters" style="margin-top:20px">
+    <div class="row"><input id="searchBig" class="searchbig" type="search" placeholder="제목·원제·장르 검색 (초성·오타 허용 · 예: ㅅㅍㅇ, 나루토, 코미디)"></div>
+    <div class="row">
+      <span class="flabel">장르</span><span id="genreChips" style="display:flex;flex-wrap:wrap;gap:6px"></span>
+    </div>
+    <div class="row">
+      <div class="fgroup"><span class="flabel">종류</span>
+        <button class="chip on" data-media="all">전체</button>
+        <button class="chip" data-media="0">영화</button>
+        <button class="chip" data-media="1">TV</button></div>
+      <div class="fgroup"><span class="flabel">평점 ≥</span>
+        <input id="rate" type="range" min="0" max="9" step="0.5" value="0"><span class="rangeval" id="rateVal">0</span></div>
+      <div class="fgroup"><span class="flabel">연도</span>
+        <select id="yearSel"></select></div>
+      <div class="fgroup"><span class="flabel">희소성</span>
+        <select id="rareSel">
+          <option value="0">전체</option>
+          <option value="3">3개국 이하 (초희귀)</option>
+          <option value="10">10개국 이하</option>
+          <option value="30">30개국 이하</option>
+        </select></div>
+      <div class="fgroup"><span class="flabel">정렬</span>
+        <select id="sortSel">
+          <option value="pop">인기순</option>
+          <option value="vote">평점순</option>
+          <option value="year">최신순</option>
+          <option value="rare">희귀순</option>
+        </select></div>
+    </div>
+    <div class="row">
+      <button class="preset" onclick="applyPreset('gem')">💎 숨은 명작</button>
+      <button class="preset" onclick="applyPreset('top')">⭐ 평점 8.0+</button>
+      <button class="preset" onclick="applyPreset('new')">🆕 2020+ 신작</button>
+      <button class="preset" onclick="applyPreset('retro')">📼 레트로(~1999)</button>
+      <button class="preset" onclick="applyPreset('hot')">🔥 지금 뜨는</button>
+      <button class="preset" onclick="resetFilters()">↺ 초기화</button>
+      <span class="result-n" id="discCount"></span>
     </div>
   </div>
 
-  <div class="half" id="halfGlobe" onclick="openSearch()">
-    <svg id="miniGlobe"></svg>
-    <div class="caption">
-      <h2>작품으로 찾기</h2>
-      <p>보고 싶은 프로그램을 검색해 보세요</p>
-      <span class="go">검색 열기 →</span>
+  <div class="grid" id="discGrid"></div>
+  <div class="empty" id="discEmpty" style="display:none"></div>
+</div></section>
+
+<!-- ===================== 지도 ===================== -->
+<section id="map" class="view"><div class="page">
+  <div class="h1">나라별 <b>독점 카탈로그</b></div>
+  <div class="sub">색이 진할수록 한국엔 없는 작품이 많은 나라예요. 클릭하면 그 나라 목록을 봅니다.</div>
+  <svg id="mapSvg"></svg>
+  <div class="maplegend">
+    <span>적음</span><span class="legendbar"></span><span>많음 (한국 미제공 작품 수)</span>
+    <span style="margin-left:auto">🔴 클릭해서 나라별 작품 보기</span>
+  </div>
+</div></section>
+
+<!-- ===================== 나라별 ===================== -->
+<section id="country" class="view"><div class="page">
+  <div class="h1" id="cTitle"></div>
+  <div class="sub" id="cSub"></div>
+  <div id="cProfile" class="maplegend" style="margin-top:12px"></div>
+  <div class="filters" style="margin-top:18px"><div class="row">
+    <div class="fgroup"><span class="flabel">이 나라 정렬</span>
+      <select id="cSort"><option value="pop">인기순</option><option value="vote">평점순</option><option value="year">최신순</option><option value="rare">이 나라에만 가까운순</option></select></div>
+    <label class="fgroup" style="cursor:pointer"><input type="checkbox" id="cOnly"> <span class="flabel" style="cursor:pointer">이 나라에서만 볼 수 있는 것만 (여행지 매칭)</span></label>
+    <span class="result-n" id="cCount"></span>
+  </div></div>
+  <div class="grid" id="cGrid"></div>
+</div></section>
+
+<!-- ===================== 나라 비교 ===================== -->
+<section id="compare" class="view"><div class="page">
+  <div class="h1">나라 <b>vs</b> 나라</div>
+  <div class="sub">두 나라를 골라 교집합·차집합을 비교하세요. "일본에만 있고 미국엔 없는 작품" 같은 걸 찾을 수 있어요.</div>
+  <div class="cmp-pick" style="margin-top:20px">
+    <div class="fgroup"><span class="flabel">나라 A</span><select id="cmpA"></select></div>
+    <div class="fgroup"><span class="flabel">나라 B</span><select id="cmpB"></select></div>
+  </div>
+  <div class="cmp-cols">
+    <div class="cmp-col"><h4 id="cmpAt">A에만</h4><div class="n" id="cmpAn"></div><div class="cmp-list" id="cmpAlist"></div></div>
+    <div class="cmp-col"><h4>공통 (양쪽 다)</h4><div class="n" id="cmpBothn"></div><div class="cmp-list" id="cmpBothlist"></div></div>
+    <div class="cmp-col"><h4 id="cmpBt">B에만</h4><div class="n" id="cmpBn"></div><div class="cmp-list" id="cmpBlist"></div></div>
+  </div>
+</div></section>
+
+<!-- ===================== 인사이트 ===================== -->
+<section id="insights" class="view"><div class="page">
+  <div class="h1">한국이 <b>놓치고 있는 것</b></div>
+  <div class="sub" id="insSub"></div>
+  <div class="panel full" style="margin-top:18px">
+    <div class="hero-num" id="heroNums"></div>
+  </div>
+  <div class="dash-grid">
+    <div class="panel"><h3>장르별 미제공 작품</h3><div class="cap2">한국에서 못 보는 작품이 어떤 장르에 몰려 있나</div><div id="genreChart"></div></div>
+    <div class="panel"><h3>콘텐츠 부자 나라 TOP 12</h3><div class="cap2">한국 대비 독점 작품이 많은 나라</div><div id="countryChart"></div></div>
+    <div class="panel full"><h3>공개 연도별 추이</h3><div class="cap2">언제 만들어진 작품들이 한국엔 없나 (2000년 이후)</div><div class="linewrap" id="yearChart"></div></div>
+    <div class="panel"><h3>원어(제작 언어) 분포</h3><div class="cap2">어느 나라 말로 만들어진 작품인가</div><div id="langChart"></div></div>
+    <div class="panel"><h3>나라별 콘텐츠 특색</h3><div class="cap2">나라를 고르면 그 나라의 대표 장르</div>
+      <select id="profSel" style="margin-bottom:12px"></select><div id="profChart"></div></div>
+  </div>
+</div></section>
+
+<!-- ===================== 위시리스트 ===================== -->
+<section id="wishlist" class="view"><div class="page">
+  <div class="h1">내 <b>찜</b> · 넷플릭스 여권</div>
+  <div class="sub" id="wlSub"></div>
+  <div class="wl-tools">
+    <button class="btn" onclick="applyPreset('gem')">＋ 작품 더 찾기</button>
+    <button class="btn" id="shareWlBtn">🔗 이 목록 공유</button>
+    <button class="btn" onclick="clearWishlist()">🗑 전체 비우기</button>
+  </div>
+
+  <div class="cover-box" id="coverBox" style="display:none"></div>
+
+  <div class="section-t">🗺️ 내 넷플릭스 여권</div>
+  <div class="sub" style="margin-top:0">찜한 작품들이 어느 나라에서 만들어졌는지 지도에 스탬프로 찍었어요.</div>
+  <div class="passport"><svg id="passportSvg"></svg><div class="stamp-list" id="stampList"></div></div>
+
+  <div class="section-t">찜한 작품</div>
+  <div class="grid" id="wlGrid"></div>
+  <div class="empty" id="wlEmpty" style="display:none">아직 찜한 작품이 없어요. 마음에 드는 작품의 <b>♡</b> 를 눌러 담아보세요.</div>
+</div></section>
+
+<!-- ===================== 상세 모달 ===================== -->
+<div class="modal" id="modal">
+  <div class="sheet" style="position:relative">
+    <button class="closex" onclick="closeModal()">×</button>
+    <div class="top">
+      <img id="mPoster" alt="">
+      <div class="info">
+        <h2 id="mTitle"></h2>
+        <div class="ot" id="mOt"></div>
+        <div class="rateline" id="mRate"></div>
+        <div class="chips" id="mGenres"></div>
+        <div class="ovv" id="mOv"></div>
+        <div class="actions">
+          <button class="btn primary" id="mFav"></button>
+          <button class="btn" id="mShare">🔗 공유 링크</button>
+          <button class="btn" id="mCard">🖼 공유 카드 저장</button>
+        </div>
+      </div>
+    </div>
+    <div class="avail">
+      <h4 id="mAvailH"></h4>
+      <svg class="mapmini" id="mMap"></svg>
+      <div class="cc" id="mCC"></div>
     </div>
   </div>
-</section>
-
-<!-- ===================== 지도 화면 ===================== -->
-<section id="mapView" class="view">
-  <div class="topbar">
-    <span class="back" onclick="goHome()">← 처음으로</span>
-    <span class="title"><b>한국 미제공</b> 작품이 있는 나라를 클릭하세요</span>
-  </div>
-  <svg id="bigMap"></svg>
-  <div class="maphint">🔴 색이 있는 나라만 클릭 가능 · 마우스를 올리면 나라 이름이 보여요</div>
-</section>
-
-<!-- ===================== 나라별 작품 화면 ===================== -->
-<section id="countryView" class="view">
-  <div class="topbar"><span class="back" onclick="openMap()">← 지도로</span></div>
-  <div class="scroll" id="cvScroll">
-    <div class="headline" id="cvTitle"></div>
-    <div class="subline" id="cvSub"></div>
-    <div class="grid" id="cvGrid"></div>
-  </div>
-</section>
-
-<!-- ===================== 검색 화면 ===================== -->
-<section id="searchView" class="view">
-  <div class="topbar"><span class="back" onclick="goHome()">← 처음으로</span></div>
-  <div class="searchWrap" id="searchWrap">
-    <div class="ask">어떤 프로그램을 <b>보고 싶으신가요?</b></div>
-    <div class="searchbox">
-      <input id="searchInput" type="text" placeholder="제목을 입력하세요 (예: 오징어, Friends, 나루토...)" autocomplete="off" />
-      <span class="ico">🔍</span>
-    </div>
-    <div class="results"><div class="grid" id="srGrid"></div><div class="empty" id="srEmpty"></div></div>
-  </div>
-</section>
+</div>
 
 <div id="tooltip"></div>
-<div class="loading" id="loading">세계지도 불러오는 중…</div>
+<div class="toast" id="toast"></div>
+<div class="loading" id="loading">데이터 불러오는 중…</div>
+<canvas id="cardCanvas" width="1080" height="1350" style="display:none"></canvas>
 
 <script src="data.js"></script>
 <script>
-const DATA = window.NERFLE;
-const idToCode = {};                         // topojson 숫자id -> ISO2
-Object.values(DATA.countries).forEach(c => { if(c.id) idToCode[String(parseInt(c.id,10))] = c.iso2; });
-
+/* ============================================================
+   NERFLE  ·  한국 미제공 넷플릭스 탐색 웹앱
+   데이터: window.NERFLE = {countries, genres, titles, stats}
+   ============================================================ */
+const D = window.NERFLE;
+const T = D.titles, C = D.countries, G = D.genres, S = D.stats;
+const IMG = "https://image.tmdb.org/t/p/";
 const $ = s => document.querySelector(s);
-function show(id){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  $('#'+id).classList.add('active'); }
+const $$ = s => [...document.querySelectorAll(s)];
 
-function goHome(){ show('landing'); }
-function openMap(){ show('mapView'); }
-function openSearch(){ show('searchView'); setTimeout(()=>$('#searchInput').focus(),200); }
+/* ---- 인덱스/헬퍼 ---- */
+const codeToIdx = {}; C.forEach((c,i)=>codeToIdx[c.code]=i);
+const idToCode = {};  C.forEach(c=>{ if(c.id) idToCode[String(parseInt(c.id,10))]=c.code; });
+const keyOf = t => t.m + "_" + t.id;
+const byKey = {}; T.forEach(t=>byKey[keyOf(t)]=t);
+const poster = (p,size="w342") => p ? IMG+size+p : "";
+const gname = gid => G[gid] || gid;
+const mediaLabel = m => m===1 ? "TV" : "영화";
+const ageLabel = cr => cr==="ALL" ? "전체" : cr;   // ALL/12/15/19
+const ageBadge = t => t.cr ? `<span class="age a${t.cr}" title="연령 등급">${ageLabel(t.cr)}</span>` : "";
+const cName = i => C[i] ? C[i].name : "";
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
-/* ---------------- 포스터 카드 ---------------- */
-function card(p){
-  const type = p.media_type==='movie' ? '영화' : 'TV';
-  const rating = (p.vote!=null && p.vote>0) ? `<span class="badge">★ ${p.vote}</span>` : '';
-  const img = p.poster
-    ? `<img loading="lazy" src="${p.poster}" alt="${p.title}"
-         onerror="this.parentNode.innerHTML='<div class=noimg>${p.title.replace(/'/g,'')}</div>'">`
-    : `<div class="noimg">${p.title}</div>`;
-  const meta = [p.year, p.country].filter(Boolean).join(' · ');
-  return `<div class="card"><div class="poster">${rating}<span class="type">${type}</span>${img}</div>
-    <div class="cap"><div class="t">${p.title}</div><div class="m">${meta}</div></div></div>`;
-}
+/* 각 작품의 가용 국가 수(희소성) 미리 계산 */
+T.forEach(t=> t._n = t.av.length);
 
-/* ---------------- 스크롤 시 조금씩 렌더 ---------------- */
-function renderMore(grid, state, batch=48){
-  const next = state.list.slice(state.shown, state.shown + batch);
-  if(!next.length) return;
-  grid.insertAdjacentHTML('beforeend', next.map(card).join(''));
-  state.shown += next.length;
-}
-function nearBottom(el){ return el.scrollTop + el.clientHeight > el.scrollHeight - 700; }
-
-/* ---------------- 나라별 화면 ---------------- */
-let cvState = {list:[], shown:0};
-function openCountry(code){
-  const c = DATA.countries[code]; if(!c) return;
-  $('#cvTitle').innerHTML = `${c.name} <b>넷플릭스</b>`;
-  $('#cvSub').textContent = `한국에서는 볼 수 없는 작품 ${c.count.toLocaleString()}편`;
-  cvState = {list:c.programs, shown:0};
-  $('#cvGrid').innerHTML = '';
-  renderMore($('#cvGrid'), cvState, 60);
-  show('countryView'); $('#cvScroll').scrollTop = 0;
-}
-$('#cvScroll').addEventListener('scroll', e => {
-  if(nearBottom(e.target)) renderMore($('#cvGrid'), cvState);
-});
-
-/* ---------------- 검색 화면 ---------------- */
-const sIn = $('#searchInput');
-let srState = {list:[], shown:0};
-sIn.addEventListener('input', () => {
-  const q = sIn.value.trim().toLowerCase();
-  const wrap = $('#searchWrap');
-  if(!q){ $('#srGrid').innerHTML=''; $('#srEmpty').textContent=''; wrap.classList.remove('searched'); return; }
-  wrap.classList.add('searched');
-  const hits = DATA.all.filter(p =>
-    (p.title||'').toLowerCase().includes(q) || (p.genres||'').toLowerCase().includes(q));
-  srState = {list:hits, shown:0};
-  $('#srGrid').innerHTML = '';
-  renderMore($('#srGrid'), srState, 60);
-  $('#srEmpty').textContent = hits.length ? '' : `'${sIn.value}' 에 대한 결과가 없어요.`;
-});
-$('#searchWrap').addEventListener('scroll', e => {
-  if(nearBottom(e.target)) renderMore($('#srGrid'), srState);
-});
-
-/* ---------------- 지도 그리기 (D3) ---------------- */
-function drawMap(svgSel, feats, {globe=false, interactive=false, spin=false}={}){
-  const svg = d3.select(svgSel);
-  const node = svg.node().getBoundingClientRect();
-  const w = node.width || window.innerWidth, h = node.height || window.innerHeight;
-  svg.attr('viewBox',`0 0 ${w} ${h}`).selectAll('*').remove();
-
-  const proj = (globe ? d3.geoOrthographic() : d3.geoNaturalEarth1())
-    .fitExtent([[10,10],[w-10,h-10]], {type:'Sphere'});
-  const path = d3.geoPath(proj);
-
-  if(globe){
-    svg.append('circle').attr('cx',w/2).attr('cy',h/2)
-       .attr('r',proj.scale()).attr('fill','#0b1a2b')
-       .attr('stroke','rgba(255,255,255,.15)');
+/* ---- 초성 검색 지원 ---- */
+const CHO = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+function chosung(str){
+  let out="";
+  for(const ch of String(str)){
+    const c = ch.charCodeAt(0)-0xAC00;
+    if(c>=0 && c<11172) out += CHO[Math.floor(c/588)];
+    else out += ch;
   }
-  const g = svg.append('g');
-  const paths = g.selectAll('path').data(feats).join('path')
-    .attr('d', path)
-    .attr('class', d => {
-      const on = interactive && idToCode[String(parseInt(d.id,10))];
-      return 'country' + (on ? ' clickable' : '');
-    });
+  return out;
+}
+const norm = s => String(s||"").toLowerCase().replace(/\s+/g,"");
+/* 검색 인덱스 캐시 */
+T.forEach(t=>{
+  t._s = norm(t.t)+" "+norm(t.ot)+" "+norm(t.g.map(gname).join(""));
+  t._c = chosung(t.t);
+});
+function matchQuery(t, q){
+  if(!q) return true;
+  const nq = norm(q);
+  if(t._s.includes(nq)) return true;
+  // 초성 질의 (질의가 전부 초성일 때)
+  if([...q].every(ch=>CHO.includes(ch)) && t._c.includes(q)) return true;
+  return false;
+}
 
-  if(interactive){
-    const t = $('#tooltip');
+/* ---- 위시리스트 (localStorage) ---- */
+const WKEY = "nerfle_wishlist_v1";
+let wish = new Set(JSON.parse(localStorage.getItem(WKEY)||"[]"));
+function saveWish(){ localStorage.setItem(WKEY, JSON.stringify([...wish])); $("#wishCount").textContent = wish.size; }
+function toggleWish(key){
+  if(wish.has(key)){ wish.delete(key); toast("찜 해제"); }
+  else { wish.add(key); toast("찜 목록에 담았어요 ♥"); }
+  saveWish();
+  // 열려있는 화면 갱신
+  refreshFavMarks();
+  if(location.hash.startsWith("#/wishlist")) renderWishlist();
+  if($("#modal").classList.contains("open") && curDetail) renderFavBtn();
+}
+function refreshFavMarks(){
+  $$(".card").forEach(el=>{
+    const k=el.dataset.key; const fav=el.querySelector(".fav");
+    if(fav) fav.textContent = wish.has(k)?"♥":"";
+  });
+}
+
+/* ---- 토스트 ---- */
+let toastT;
+function toast(msg){ const el=$("#toast"); el.textContent=msg; el.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("show"),1800); }
+
+/* ============================================================
+   카드 렌더
+   ============================================================ */
+function badge(t){
+  if(t._hot) return `<span class="hot">🔥 인기</span>`;
+  if(t._n<=3) return `<span class="rare">💎 ${t._n}개국뿐</span>`;
+  return "";
+}
+function cardHTML(t){
+  const k=keyOf(t);
+  const img = t.p
+    ? `<img loading="lazy" src="${poster(t.p)}" alt="${esc(t.t)}" onerror="this.parentNode.classList.add('_e');this.remove()">`
+    : "";
+  const noimg = `<div class="noimg">${esc(t.t)}</div>`;
+  const rating = (t.v>0)?`<span class="badge">★ ${t.v}</span>`:"";
+  const meta = [t.y||"", `${t._n}개국`].filter(Boolean).join(" · ");
+  return `<div class="card" data-key="${k}" onclick="openDetail('${k}')">
+    <div class="poster ${t.p?"":"_e"}">${rating}<span class="tr">${ageBadge(t)}<span class="type">${mediaLabel(t.m)}</span></span>${badge(t)}
+      <span class="fav">${wish.has(k)?"♥":""}</span>${img}${t.p?"":noimg}</div>
+    <div class="cap"><div class="t">${esc(t.t)}</div><div class="m">${meta}</div></div></div>`;
+}
+/* onerror 로 이미지 사라지면 noimg 표시 */
+document.addEventListener("error", e=>{
+  const p=e.target.closest && e.target.closest(".poster");
+}, true);
+
+/* 무한 스크롤 그리드 */
+function makeScroller(gridSel, getList, batch=50){
+  let state={list:[],shown:0};
+  const grid=$(gridSel);
+  function render(reset){
+    if(reset){ state={list:getList(),shown:0}; grid.innerHTML=""; }
+    const next=state.list.slice(state.shown,state.shown+batch);
+    grid.insertAdjacentHTML("beforeend", next.map(cardHTML).join(""));
+    state.shown+=next.length;
+  }
+  window.addEventListener("scroll",()=>{
+    if(!grid.offsetParent) return;
+    if(window.innerHeight+window.scrollY > document.body.offsetHeight-800) render(false);
+  });
+  return {render, state:()=>state};
+}
+
+/* ============================================================
+   라우팅
+   ============================================================ */
+function go(hash){ location.hash=hash; }
+function showView(id){
+  $$(".view").forEach(v=>v.classList.toggle("active",v.id===id));
+  $$(".nav .tab").forEach(a=>a.classList.toggle("active", a.getAttribute("href")==="#/"+id || (id==="country"&&a.getAttribute("href")==="#/map")));
+  window.scrollTo(0,0);
+}
+function router(){
+  const h=location.hash||"#/";
+  const parts=h.replace(/^#\//,"").split("/");
+  const root=parts[0]||"";
+  // 모달 라우트
+  if(root==="title"){ // #/title/m/id  → 이전 뷰 위에 모달
+    const key=parts[1]+"_"+parts[2];
+    if(!$(".view.active")) showView("home");
+    openDetail(key,true); return;
+  } else closeModalSilent();
+
+  switch(root){
+    case "": case "home": showView("home"); initHome(); break;
+    case "discover": showView("discover"); initDiscover(); break;
+    case "map": showView("map"); initMap(); break;
+    case "country": showView("country"); openCountry(parts[1]); break;
+    case "compare": showView("compare"); initCompare(parts[1],parts[2]); break;
+    case "insights": showView("insights"); initInsights(); break;
+    case "wishlist": showView("wishlist"); renderWishlist(); break;
+    default: showView("home"); initHome();
+  }
+}
+window.addEventListener("hashchange", router);
+
+/* ============================================================
+   홈
+   ============================================================ */
+let homeDone=false;
+function initHome(){
+  drawHomeMaps();
+  const kr = S.total_unique, hi = T.reduce((m,t)=>Math.max(m,t.v||0),0);
+  const top = T.filter(t=>t.v>=8).length;
+  $("#homeStats").innerHTML = [
+    [`<b>${S.total_unique.toLocaleString()}</b>`, "한국 미제공 고유 작품"],
+    [`<b>${S.n_countries}</b>`, "수집된 나라"],
+    [`<b>${top.toLocaleString()}</b>`, "평점 8.0+ 명작"],
+    [`<b>${(S.genre_counts[18]||0).toLocaleString()}</b>`, "드라마 장르 미제공작"],
+  ].map(([v,k])=>`<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
+  renderDaily();
+}
+function renderDaily(){
+  // 날짜 시드 랜덤 (매일 한 편 고정)
+  const seed = Number(new Date().toISOString().slice(0,10).replace(/-/g,""));
+  const pool = T.filter(t=>t.v>=7 && t.p);
+  const t = pool[seed % pool.length];
+  $("#dailyCard").innerHTML = `
+    <img src="${poster(t.p)}" alt="" onclick="openDetail('${keyOf(t)}')" style="cursor:pointer">
+    <div class="info">
+      <div class="tag">오늘의 한 편</div>
+      <h3 style="cursor:pointer" onclick="openDetail('${keyOf(t)}')">${esc(t.t)}</h3>
+      <div class="meta">${mediaLabel(t.m)} · ${t.y||""} · ★ ${t.v} · ${t._n}개국에서만 시청 가능</div>
+      <div class="ov">${esc(t.ov||"줄거리 정보가 없어요.")}</div>
+      <div style="margin-top:12px"><button class="btn primary" onclick="openDetail('${keyOf(t)}')">자세히 보기</button></div>
+    </div>`;
+}
+
+/* ============================================================
+   탐색 (필터 + 검색 + 정렬 + 무한스크롤)
+   ============================================================ */
+let discScroller, discInit=false;
+const filt = {q:"", genres:new Set(), media:"all", rate:0, year:"all", rare:0, sort:"pop"};
+function initDiscover(){
+  if(!discInit){ buildDiscoverControls(); discInit=true; }
+  $("#discSub").textContent = `${S.total_unique.toLocaleString()}편을 장르·평점·연도·희소성으로 걸러보세요.`;
+  runDiscover();
+}
+function buildDiscoverControls(){
+  // 장르 칩
+  const gs = Object.entries(S.genre_counts).sort((a,b)=>b[1]-a[1]);
+  $("#genreChips").innerHTML = gs.map(([gid,n])=>
+    `<button class="chip" data-genre="${gid}">${esc(gname(gid))}</button>`).join("");
+  $("#genreChips").addEventListener("click",e=>{
+    const b=e.target.closest("[data-genre]"); if(!b)return;
+    const gid=b.dataset.genre;
+    if(filt.genres.has(gid)){ filt.genres.delete(gid); b.classList.remove("on"); }
+    else { filt.genres.add(gid); b.classList.add("on"); }
+    runDiscover();
+  });
+  // 연도 select
+  const years=[...new Set(T.map(t=>t.y).filter(Boolean))].sort((a,b)=>b-a);
+  const decades=[...new Set(years.map(y=>Math.floor(y/10)*10))].sort((a,b)=>b-a);
+  $("#yearSel").innerHTML = `<option value="all">전체</option>`+
+    decades.map(d=>`<option value="dec${d}">${d}년대</option>`).join("");
+  // 이벤트
+  $$(".chip[data-media]").forEach(b=>b.onclick=()=>{
+    filt.media=b.dataset.media; $$(".chip[data-media]").forEach(x=>x.classList.toggle("on",x===b)); runDiscover();
+  });
+  $("#rate").oninput=e=>{ filt.rate=+e.target.value; $("#rateVal").textContent=filt.rate; runDiscover(); };
+  $("#yearSel").onchange=e=>{ filt.year=e.target.value; runDiscover(); };
+  $("#rareSel").onchange=e=>{ filt.rare=+e.target.value; runDiscover(); };
+  $("#sortSel").onchange=e=>{ filt.sort=e.target.value; runDiscover(); };
+  let sT; $("#searchBig").oninput=e=>{ clearTimeout(sT); sT=setTimeout(()=>{ filt.q=e.target.value.trim(); runDiscover(); },150); };
+  discScroller = makeScroller("#discGrid", currentList, 50);
+}
+function currentList(){
+  let list = T.filter(t=>{
+    if(filt.media!=="all" && t.m!==+filt.media) return false;
+    if(filt.rate>0 && !(t.v>=filt.rate)) return false;
+    if(filt.rare>0 && t._n>filt.rare) return false;
+    if(filt.year!=="all"){ const d=+filt.year.slice(3); if(!(t.y>=d && t.y<d+10)) return false; }
+    if(filt.genres.size && !t.g.some(g=>filt.genres.has(String(g)))) return false;
+    if(filt.q && !matchQuery(t,filt.q)) return false;
+    return true;
+  });
+  const cmp = {
+    pop:(a,b)=>b.pop-a.pop, vote:(a,b)=>(b.v||0)-(a.v||0),
+    year:(a,b)=>(b.y||0)-(a.y||0), rare:(a,b)=>a._n-b._n,
+  }[filt.sort];
+  return list.sort(cmp);
+}
+function runDiscover(){
+  const list=currentList();
+  discScroller.render(true);
+  $("#discCount").textContent = `${list.length.toLocaleString()}편`;
+  $("#discEmpty").style.display = list.length? "none":"block";
+  $("#discEmpty").innerHTML = `조건에 맞는 작품이 없어요. 필터를 완화해 보세요.`;
+}
+function resetFilters(){
+  filt.q="";filt.genres.clear();filt.media="all";filt.rate=0;filt.year="all";filt.rare=0;filt.sort="pop";
+  if(discInit){
+    $("#searchBig").value="";$("#rate").value=0;$("#rateVal").textContent=0;
+    $("#yearSel").value="all";$("#rareSel").value=0;$("#sortSel").value="pop";
+    $$(".chip[data-genre]").forEach(b=>b.classList.remove("on"));
+    $$(".chip[data-media]").forEach(b=>b.classList.toggle("on",b.dataset.media==="all"));
+    runDiscover();
+  }
+}
+function applyPreset(kind){
+  go("#/discover");
+  setTimeout(()=>{
+    if(!discInit){ buildDiscoverControls(); discInit=true; }
+    resetFilters();
+    if(kind==="gem"){ filt.rate=8; filt.rare=10; filt.sort="vote"; }
+    else if(kind==="top"){ filt.rate=8; filt.sort="vote"; }
+    else if(kind==="new"){ filt.year="dec2020"; filt.sort="year"; }
+    else if(kind==="retro"){ filt.year="dec1990"; filt.sort="vote"; }
+    else if(kind==="hot"){ markHot(); filt.sort="pop"; }
+    syncControls(); runDiscover();
+  },40);
+}
+function markHot(){
+  const sorted=[...T].sort((a,b)=>b.pop-a.pop);
+  const cut=Math.ceil(T.length*0.05);
+  T.forEach(t=>t._hot=false); sorted.slice(0,cut).forEach(t=>t._hot=true);
+}
+function syncControls(){
+  $("#rate").value=filt.rate; $("#rateVal").textContent=filt.rate;
+  $("#yearSel").value=filt.year; $("#rareSel").value=filt.rare; $("#sortSel").value=filt.sort;
+  $$(".chip[data-media]").forEach(b=>b.classList.toggle("on",b.dataset.media===filt.media));
+  $$(".chip[data-genre]").forEach(b=>b.classList.toggle("on",filt.genres.has(b.dataset.genre)));
+}
+markHot(); // 초기 hot 계산
+
+/* ============================================================
+   지도 (독점률 코로플레스)
+   ============================================================ */
+let WORLD=null, mapDrawn=false;
+const maxN = Math.max(...C.map(c=>c.n));
+function heat(n){ // 0..1 → 붉은 계열
+  const t=Math.sqrt(n/maxN);
+  const r=Math.round(58+(229-58)*t), g=Math.round(17+(9-17)*t*0), b=Math.round(19+(20-19)*t);
+  return `rgb(${r},${Math.round(9*t+17*(1-t))},${b})`;
+}
+function loadWorld(){
+  if(WORLD) return Promise.resolve(WORLD);
+  return d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json")
+    .then(w=>{ WORLD=topojson.feature(w,w.objects.countries).features; $("#loading").style.display="none"; return WORLD; });
+}
+function drawHomeMaps(){
+  loadWorld().then(feats=>{
+    drawMap("#miniMap",feats,{spin:true});
+    drawMap("#miniGlobe",feats,{globe:true});
+    d3.select("#miniMap").selectAll("path")
+      .filter(d=>idToCode[String(parseInt(d.id,10))])
+      .attr("fill",d=>heat(C[codeToIdx[idToCode[String(parseInt(d.id,10))]]].n));
+  }).catch(()=>{ $("#loading").textContent="지도를 불러오지 못했습니다."; });
+}
+function initMap(){
+  loadWorld().then(feats=>{
+    drawMap("#mapSvg",feats,{interactive:true,choropleth:true});
+  });
+}
+function drawMap(sel,feats,opt={}){
+  const svg=d3.select(sel); const box=svg.node().getBoundingClientRect();
+  const w=box.width||window.innerWidth, h=box.height||480;
+  svg.attr("viewBox",`0 0 ${w} ${h}`).selectAll("*").remove();
+  const proj=(opt.globe?d3.geoOrthographic():d3.geoNaturalEarth1()).fitExtent([[8,8],[w-8,h-8]],{type:"Sphere"});
+  const path=d3.geoPath(proj);
+  if(opt.globe) svg.append("circle").attr("cx",w/2).attr("cy",h/2).attr("r",proj.scale()).attr("fill","#0b1a2b").attr("stroke","rgba(255,255,255,.15)");
+  const g=svg.append("g");
+  const paths=g.selectAll("path").data(feats).join("path").attr("d",path)
+    .attr("class",d=>{ const on=idToCode[String(parseInt(d.id,10))]; return "country"+(opt.interactive&&on?" click":(on?"":" dim")); })
+    .attr("fill",d=>{ const code=idToCode[String(parseInt(d.id,10))];
+      if(!code) return "#242424";
+      return opt.choropleth?heat(C[codeToIdx[code]].n):"#3a3a3a"; });
+  if(opt.interactive){
+    const tt=$("#tooltip");
     paths.filter(d=>idToCode[String(parseInt(d.id,10))])
-      .style('cursor','pointer')
-      .on('mouseenter', function(ev,d){
-        const el = d3.select(this);
-        el.raise().classed('hot', true);           // 색·확대 (CSS .hot)
-        const c = DATA.countries[idToCode[String(parseInt(d.id,10))]];
-        t.innerHTML = `${c.name}<small>한국 미제공 ${c.count}편 · 클릭</small>`;
-        t.style.opacity = 1;
-      })
-      .on('mousemove', function(ev){
-        t.style.left = ev.clientX+'px'; t.style.top = ev.clientY+'px';
-      })
-      .on('mouseleave', function(){
-        d3.select(this).classed('hot', false);
-        t.style.opacity = 0;
-      })
-      .on('click', function(ev,d){ openCountry(idToCode[String(parseInt(d.id,10))]); });
+      .on("mouseenter",function(ev,d){ d3.select(this).raise().classed("hot",true);
+        const c=C[codeToIdx[idToCode[String(parseInt(d.id,10))]]];
+        tt.innerHTML=`${esc(c.name)}<small>한국 미제공 ${c.n}편 · 클릭</small>`; tt.style.opacity=1; })
+      .on("mousemove",ev=>{ tt.style.left=ev.clientX+"px"; tt.style.top=ev.clientY+"px"; })
+      .on("mouseleave",function(){ d3.select(this).classed("hot",false); tt.style.opacity=0; })
+      .on("click",(ev,d)=>go("#/country/"+idToCode[String(parseInt(d.id,10))]));
   }
-
-  if(globe){                                  // 지구본 천천히 회전
-    d3.timer(el => {
-      proj.rotate([el*0.02 - 60, -15]);
-      g.selectAll('path').attr('d', path);
-    });
-  }
-  if(spin){                                   // 평면 지도: 경도 회전으로 '지구가 흐르는' 느낌
-    d3.timer(el => {
-      proj.rotate([el*0.012, 0]);
-      g.selectAll('path').attr('d', path);
-    });
-  }
-  return {highlight:paths};
+  if(opt.globe) d3.timer(el=>{ proj.rotate([el*0.02-60,-15]); g.selectAll("path").attr("d",path); });
+  if(opt.spin) d3.timer(el=>{ proj.rotate([el*0.012,0]); g.selectAll("path").attr("d",path); });
 }
 
-/* ---------------- 초기화 ---------------- */
-let WORLD_FEATS = null, bigDrawn = false;
+/* ============================================================
+   나라별
+   ============================================================ */
+let curCountry=null;
+function openCountry(code){
+  const idx=codeToIdx[code]; if(idx==null){ go("#/map"); return; }
+  curCountry=idx;
+  const c=C[idx];
+  $("#cTitle").innerHTML=`${esc(c.name)} <b>넷플릭스</b>`;
+  $("#cSub").textContent=`한국에서는 볼 수 없지만 ${c.name}에서는 볼 수 있는 작품 ${c.n.toLocaleString()}편`;
+  // 프로필: 대표 장르
+  const tg=(S.country_top_genres[code]||[]).map(([gid,n])=>`<span class="chip on" style="cursor:default">${esc(gname(gid))} ${n}</span>`).join(" ");
+  $("#cProfile").innerHTML = tg? `<span class="flabel">대표 장르</span> ${tg}` : "";
+  $("#cSort").onchange=renderCountry;
+  $("#cOnly").onchange=renderCountry;
+  $("#cSort").value="pop"; $("#cOnly").checked=false;
+  renderCountry();
+}
+function renderCountry(){
+  const idx=curCountry, code=C[idx].code;
+  let list=T.filter(t=>t.av.includes(idx));
+  if($("#cOnly").checked) list=list.filter(t=>t._n<=2); // 이 나라(+한국제외) 거의 독점
+  const s=$("#cSort").value;
+  const cmp={pop:(a,b)=>b.pop-a.pop,vote:(a,b)=>(b.v||0)-(a.v||0),year:(a,b)=>(b.y||0)-(a.y||0),rare:(a,b)=>a._n-b._n}[s];
+  list.sort(cmp);
+  $("#cCount").textContent=`${list.length.toLocaleString()}편`;
+  const grid=$("#cGrid"); grid.innerHTML=list.slice(0,120).map(cardHTML).join("");
+  grid._full=list; grid._shown=120;
+}
+window.addEventListener("scroll",()=>{
+  const grid=$("#cGrid"); if(!grid||!grid.offsetParent||!grid._full) return;
+  if(window.innerHeight+window.scrollY>document.body.offsetHeight-800 && grid._shown<grid._full.length){
+    const next=grid._full.slice(grid._shown,grid._shown+60);
+    grid.insertAdjacentHTML("beforeend",next.map(cardHTML).join("")); grid._shown+=next.length;
+  }
+});
 
-// 지도 화면은 열릴 때(실제 크기 확보 후) 그린다 → 인터랙션 정상 동작
-const _openMap = openMap;
-openMap = function(){
-  show('mapView');
-  if(WORLD_FEATS && !bigDrawn){ drawMap('#bigMap', WORLD_FEATS, {interactive:true}); bigDrawn = true; }
-};
+/* ============================================================
+   나라 비교 (교집합/차집합)
+   ============================================================ */
+function initCompare(a,b){
+  const opts=C.map((c,i)=>`<option value="${i}">${esc(c.name)} (${c.n})</option>`).join("");
+  const rank=S.country_rank;
+  const defA=a!=null?codeToIdx[a]:codeToIdx[rank[1].code];
+  const defB=b!=null?codeToIdx[b]:codeToIdx[rank[3].code];
+  $("#cmpA").innerHTML=opts; $("#cmpB").innerHTML=opts;
+  $("#cmpA").value=defA; $("#cmpB").value=defB;
+  $("#cmpA").onchange=$("#cmpB").onchange=renderCompare;
+  renderCompare();
+}
+function cmpItem(t){ return `<div class="cmp-item" onclick="openDetail('${keyOf(t)}')">
+  <img src="${poster(t.p,'w92')}" alt="" onerror="this.style.visibility='hidden'">
+  <div><div class="t">${esc(t.t)}</div><div class="mm">${mediaLabel(t.m)} · ${t.y||""} · ★ ${t.v||"-"}</div></div></div>`; }
+function renderCompare(){
+  const ai=+$("#cmpA").value, bi=+$("#cmpB").value;
+  const A=cName(ai), B=cName(bi);
+  const onlyA=[],onlyB=[],both=[];
+  T.forEach(t=>{ const a=t.av.includes(ai),b=t.av.includes(bi);
+    if(a&&b)both.push(t); else if(a)onlyA.push(t); else if(b)onlyB.push(t); });
+  const bypop=l=>l.sort((x,y)=>y.pop-x.pop).slice(0,60);
+  $("#cmpAt").innerHTML=`${esc(A)}<span style="color:var(--nf-red)">에만</span> 있음`;
+  $("#cmpBt").innerHTML=`${esc(B)}<span style="color:var(--nf-red)">에만</span> 있음`;
+  $("#cmpAn").textContent=`${onlyA.length}편 · ${B}엔 없음`;
+  $("#cmpBn").textContent=`${onlyB.length}편 · ${A}엔 없음`;
+  $("#cmpBothn").textContent=`${both.length}편 · 둘 다 시청 가능`;
+  $("#cmpAlist").innerHTML=bypop(onlyA).map(cmpItem).join("")||"<div class='empty'>없음</div>";
+  $("#cmpBlist").innerHTML=bypop(onlyB).map(cmpItem).join("")||"<div class='empty'>없음</div>";
+  $("#cmpBothlist").innerHTML=bypop(both).map(cmpItem).join("")||"<div class='empty'>없음</div>";
+}
 
-d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
-  .then(world => {
-    WORLD_FEATS = topojson.feature(world, world.objects.countries).features;
-    $('#loading').style.display = 'none';
-    drawMap('#miniMap', WORLD_FEATS, {interactive:false, spin:true});
-    drawMap('#miniGlobe', WORLD_FEATS, {globe:true});
-    // 미니맵 대상 국가: 빨갛게 맥동(.target CSS 애니메이션)
-    d3.select('#miniMap').selectAll('path')
-      .filter(d=>idToCode[String(parseInt(d.id,10))]).classed('target', true);
-  })
-  .catch(() => { $('#loading').textContent = '지도를 불러오지 못했습니다. 인터넷 연결을 확인하세요.'; });
+/* ============================================================
+   인사이트 대시보드  (단일 시리즈 · 넷플릭스 레드 액센트)
+   ============================================================ */
+let insDone=false;
+function initInsights(){
+  $("#insSub").textContent = `${S.generated_at} 기준 · 고유 ${S.total_unique.toLocaleString()}편이 한국 넷플릭스엔 없어요.`;
+  if(insDone) return; insDone=true;
+  // 히어로 숫자
+  const top8=T.filter(t=>t.v>=8).length;
+  const best=[...T].sort((a,b)=>(b.v||0)-(a.v||0))[0];
+  $("#heroNums").innerHTML=[
+    [`<b>${S.total_unique.toLocaleString()}</b>`,"한국 미제공 고유 작품"],
+    [`<b>${top8.toLocaleString()}</b>`,"평점 8.0 이상 명작"],
+    [`<b>${S.n_countries}</b>`,"이 작품들을 볼 수 있는 나라"],
+    [`★ <b>${best.v}</b>`,`최고 평점 · ${esc(best.t)}`],
+  ].map(([n,l])=>`<div class="item"><div class="n">${n}</div><div class="l">${l}</div></div>`).join("");
+  // 장르 바
+  barChart("#genreChart", Object.entries(S.genre_counts).map(([g,n])=>[gname(g),n,g])
+    .sort((a,b)=>b[1]-a[1]).slice(0,10), {onclick:(row)=>{filt.genres=new Set([row[2]]);go("#/discover");setTimeout(()=>{buildIfNeeded();syncControls();runDiscover();},50);}});
+  // 나라 바
+  barChart("#countryChart", S.country_rank.slice(0,12).map(r=>[r.name,r.n,r.code]),
+    {onclick:(row)=>go("#/country/"+row[2])});
+  // 언어 바
+  const LANG={en:"영어",ja:"일본어",es:"스페인어",zh:"중국어",fr:"프랑스어",ko:"한국어",de:"독일어",it:"이탈리아어",pt:"포르투갈어",hi:"힌디어",th:"태국어",tr:"터키어"};
+  barChart("#langChart", Object.entries(S.lang_counts).sort((a,b)=>b[1]-a[1]).slice(0,8)
+    .map(([l,n])=>[LANG[l]||l,n,l]),{});
+  // 연도 라인
+  yearLine();
+  // 나라 프로필
+  $("#profSel").innerHTML=S.country_rank.slice(0,40).map(r=>`<option value="${r.code}">${esc(r.name)}</option>`).join("");
+  $("#profSel").onchange=e=>profChart(e.target.value);
+  profChart(S.country_rank[0].code);
+}
+function buildIfNeeded(){ if(!discInit){ buildDiscoverControls(); discInit=true; } }
+function barChart(sel,rows,{onclick}={}){
+  const max=Math.max(...rows.map(r=>r[1]))||1;
+  const el=$(sel);
+  el.innerHTML=rows.map((r,i)=>`<div class="bar-row" data-i="${i}" style="${onclick?'cursor:pointer':''}">
+    <div class="lab" title="${esc(r[0])}">${esc(r[0])}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:0"></div></div>
+    <div class="val">${r[1].toLocaleString()}</div></div>`).join("");
+  requestAnimationFrame(()=>el.querySelectorAll(".bar-fill").forEach((f,i)=>f.style.width=(rows[i][1]/max*100)+"%"));
+  if(onclick) el.querySelectorAll(".bar-row").forEach(row=>row.onclick=()=>onclick(rows[+row.dataset.i]));
+}
+function yearLine(){
+  const data=Object.entries(S.year_hist).map(([y,n])=>[+y,n]).filter(d=>d[0]>=2000&&d[0]<=2026).sort((a,b)=>a[0]-b[0]);
+  const W=$("#yearChart").clientWidth||800, H=240, m={t:16,r:16,b:28,l:34};
+  const xs=data.map(d=>d[0]), maxY=Math.max(...data.map(d=>d[1]));
+  const x=v=>m.l+(v-xs[0])/(xs[xs.length-1]-xs[0])*(W-m.l-m.r);
+  const y=v=>H-m.b-(v/maxY)*(H-m.t-m.b);
+  const line=data.map((d,i)=>(i?"L":"M")+x(d[0])+" "+y(d[1])).join(" ");
+  const area=`M${x(data[0][0])} ${H-m.b} `+data.map(d=>"L"+x(d[0])+" "+y(d[1])).join(" ")+` L${x(data[data.length-1][0])} ${H-m.b} Z`;
+  const yticks=[0,Math.round(maxY/2),maxY];
+  const xticks=data.filter((d,i)=>i%4===0||i===data.length-1);
+  $("#yearChart").innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;overflow:visible">
+    ${yticks.map(t=>`<line x1="${m.l}" x2="${W-m.r}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)"/>
+      <text x="${m.l-6}" y="${y(t)+4}" fill="var(--muted)" font-size="11" text-anchor="end">${t}</text>`).join("")}
+    ${xticks.map(d=>`<text x="${x(d[0])}" y="${H-8}" fill="var(--muted)" font-size="11" text-anchor="middle">${d[0]}</text>`).join("")}
+    <path d="${area}" fill="rgba(229,9,20,.14)"/>
+    <path d="${line}" fill="none" stroke="var(--nf-red)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${data.map(d=>`<circle cx="${x(d[0])}" cy="${y(d[1])}" r="4" fill="var(--nf-red)" stroke="#141414" stroke-width="1.5"
+        data-y="${d[0]}" data-n="${d[1]}" style="cursor:pointer"/>`).join("")}
+  </svg><div class="charttip" id="yTip"></div>`;
+  const tip=$("#yTip");
+  $("#yearChart").querySelectorAll("circle").forEach(c=>{
+    c.onmouseenter=()=>{ tip.innerHTML=`${c.dataset.y}년 · <b>${c.dataset.n}편</b>`;
+      const bb=c.getBoundingClientRect(), pb=$("#yearChart").getBoundingClientRect();
+      tip.style.left=(bb.left-pb.left+bb.width/2)+"px"; tip.style.top=(bb.top-pb.top)+"px"; tip.style.opacity=1; };
+    c.onmouseleave=()=>tip.style.opacity=0;
+  });
+}
+function profChart(code){
+  const rows=(S.country_top_genres[code]||[]).map(([g,n])=>[gname(g),n,g]);
+  barChart("#profChart",rows,{onclick:(r)=>go("#/country/"+code)});
+}
 
-window.addEventListener('resize', () => location.reload());
+/* ============================================================
+   위시리스트 / 여권 / 최소 국가 조합
+   ============================================================ */
+function wishTitles(){ return [...wish].map(k=>byKey[k]).filter(Boolean); }
+function renderWishlist(){
+  saveWish();
+  const list=wishTitles();
+  $("#wlSub").textContent = list.length? `${list.length}편을 찜했어요.` : "";
+  $("#wlEmpty").style.display=list.length?"none":"block";
+  $("#wlGrid").innerHTML=list.map(cardHTML).join("");
+  renderPassport(list);
+  renderCover(list);
+  $("#shareWlBtn").onclick=()=>{
+    const keys=[...wish].join(",");
+    copy(location.origin+location.pathname+"#/wishlist?k="+encodeURIComponent(keys));
+    toast("공유 링크 복사됨");
+  };
+}
+function clearWishlist(){ if(confirm("찜 목록을 전부 비울까요?")){ wish.clear(); saveWish(); renderWishlist(); } }
+
+/* 언어 → 대표 국가코드 (여권 스탬프용, 근사) */
+const LANG2CC={en:"US",ja:"JP",ko:"KR",es:"ES",fr:"FR",de:"DE",it:"IT",zh:"CN",pt:"BR",hi:"IN",th:"TH",tr:"TR",
+  ru:"RU",sv:"SE",da:"DK",nl:"NL",no:"NO",fi:"FI",pl:"PL",id:"ID",ar:"SA",he:"IL",ta:"IN",fa:"IR"};
+const CCNAME={US:"미국",JP:"일본",KR:"한국",ES:"스페인",FR:"프랑스",DE:"독일",IT:"이탈리아",CN:"중국",BR:"브라질",IN:"인도",TH:"태국",TR:"터키",RU:"러시아",SE:"스웨덴",DK:"덴마크",NL:"네덜란드",NO:"노르웨이",FI:"핀란드",PL:"폴란드",ID:"인도네시아",SA:"사우디",IL:"이스라엘",IR:"이란"};
+const ISO2NUM_MINI={US:"840",JP:"392",KR:"410",ES:"724",FR:"250",DE:"276",IT:"380",CN:"156",BR:"076",IN:"356",TH:"764",TR:"792",RU:"643",SE:"752",DK:"208",NL:"528",NO:"578",FI:"246",PL:"616",ID:"360",SA:"682",IL:"376",IR:"364"};
+function renderPassport(list){
+  const counts={};
+  list.forEach(t=>{ const cc=LANG2CC[t.ol]; if(cc) counts[cc]=(counts[cc]||0)+1; });
+  const stamps=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  $("#stampList").innerHTML = stamps.length? stamps.map(([cc,n])=>
+    `<span class="stamp">${esc(CCNAME[cc]||cc)} ×${n}</span>`).join("")
+    : "<span style='color:var(--muted);font-size:13px'>찜한 작품이 없어요.</span>";
+  const numSet={}; Object.keys(counts).forEach(cc=>{ if(ISO2NUM_MINI[cc]) numSet[parseInt(ISO2NUM_MINI[cc],10)]=counts[cc]; });
+  loadWorld().then(feats=>{
+    const svg=d3.select("#passportSvg"); const box=svg.node().getBoundingClientRect();
+    const w=box.width||800,h=box.height||320;
+    svg.attr("viewBox",`0 0 ${w} ${h}`).selectAll("*").remove();
+    const proj=d3.geoNaturalEarth1().fitExtent([[6,6],[w-6,h-6]],{type:"Sphere"});
+    const path=d3.geoPath(proj);
+    svg.append("g").selectAll("path").data(feats).join("path").attr("d",path)
+      .attr("stroke","#000").attr("stroke-width",.4)
+      .attr("fill",d=>numSet[parseInt(d.id,10)]?"var(--nf-red)":"#242424");
+    // 스탬프 표시(원)
+    svg.append("g").selectAll("circle").data(feats.filter(d=>numSet[parseInt(d.id,10)])).join("circle")
+      .attr("transform",d=>{ const c=path.centroid(d); return `translate(${c})`; })
+      .attr("r",6).attr("fill","none").attr("stroke","#fff").attr("stroke-width",2).attr("stroke-dasharray","3 2");
+  });
+}
+function renderCover(list){
+  const box=$("#coverBox");
+  if(list.length<2){ box.style.display="none"; return; }
+  // 그리디 셋 커버: 찜 작품 전체를 가장 적은 나라 조합으로 커버
+  const need=new Set(list.map(keyOf));
+  const chosen=[];
+  const avail={}; C.forEach((c,i)=>avail[i]=new Set());
+  list.forEach(t=>t.av.forEach(i=>avail[i].add(keyOf(t))));
+  const remaining=new Set(need);
+  while(remaining.size){
+    let best=-1,bestCover=null;
+    for(const i in avail){
+      const cover=[...avail[i]].filter(k=>remaining.has(k));
+      if(cover.length>(bestCover?bestCover.length:0)){ best=+i; bestCover=cover; }
+    }
+    if(best<0||!bestCover.length) break;
+    chosen.push([best,bestCover.length]);
+    bestCover.forEach(k=>remaining.delete(k));
+  }
+  const covered=need.size-remaining.size;
+  box.style.display="block";
+  box.innerHTML=`<div class="big">🎯 찜한 <b>${need.size}편</b>을 모두 보려면 최소 <b>${chosen.length}개국</b>이면 돼요
+    ${remaining.size?`<span style="color:var(--muted)">(${remaining.size}편은 데이터상 커버 불가)</span>`:""}</div>
+    <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">
+    ${chosen.map(([i,n])=>`<span class="chip on" style="cursor:pointer" onclick="go('#/country/${C[i].code}')">${esc(C[i].name)} · ${n}편</span>`).join("")}</div>
+    <div style="color:var(--muted);font-size:12px;margin-top:8px">가장 적은 나라 수로 전부 보는 조합(그리디)이에요. 여행·VPN 참고용.</div>`;
+}
+
+/* ============================================================
+   상세 모달
+   ============================================================ */
+let curDetail=null, modalFromHash=false;
+function openDetail(key,fromHash=false){
+  const t=byKey[key]; if(!t) return;
+  curDetail=t; modalFromHash=fromHash;
+  if(!fromHash){ history.pushState(null,"", "#/title/"+t.m+"/"+t.id); }
+  $("#mPoster").src=poster(t.p,"w342")||""; $("#mPoster").style.visibility=t.p?"visible":"hidden";
+  $("#mTitle").textContent=t.t;
+  $("#mOt").textContent=t.ot&&t.ot!==t.t?t.ot:"";
+  $("#mRate").innerHTML=`<span class="star">★ ${t.v||"-"}</span><span>평가 ${(t.vc||0).toLocaleString()}</span><span>${mediaLabel(t.m)} · ${t.y||"-"}</span>${t.cr?`<span class="age a${t.cr}" style="position:static">${ageLabel(t.cr)}</span>`:""}`;
+  $("#mGenres").innerHTML=t.g.map(g=>`<span class="g">${esc(gname(g))}</span>`).join("");
+  $("#mOv").textContent=t.ov||"줄거리 정보가 없어요.";
+  renderFavBtn();
+  $("#mShare").onclick=()=>{ copy(location.origin+location.pathname+"#/title/"+t.m+"/"+t.id); toast("작품 링크 복사됨"); };
+  $("#mCard").onclick=()=>makeCard(t);
+  // 어디서 보나
+  $("#mAvailH").innerHTML=`🌍 이 작품을 볼 수 있는 나라 <b style="color:var(--nf-red)">${t._n}개국</b> · 한국은 <b style="color:var(--nf-red)">없음</b>`;
+  $("#mCC").innerHTML=t.av.map(i=>`<span onclick="go('#/country/${C[i].code}')" style="cursor:pointer">${esc(C[i].name)}</span>`).join("");
+  drawAvailMap(t);
+  $("#modal").classList.add("open"); document.body.style.overflow="hidden";
+}
+function renderFavBtn(){ renderFavBtnInner(); }
+function renderFavBtnInner(){
+  const t=curDetail,k=keyOf(t);
+  const on=wish.has(k);
+  $("#mFav").innerHTML=on?"♥ 찜 해제":"♡ 찜하기";
+  $("#mFav").onclick=()=>{ toggleWish(k); };
+}
+function drawAvailMap(t){
+  const nums={}; t.av.forEach(i=>{ if(C[i].id) nums[parseInt(C[i].id,10)]=1; });
+  loadWorld().then(feats=>{
+    const svg=d3.select("#mMap"); const box=svg.node().getBoundingClientRect();
+    const w=box.width||760,h=230;
+    svg.attr("viewBox",`0 0 ${w} ${h}`).selectAll("*").remove();
+    const proj=d3.geoNaturalEarth1().fitExtent([[6,6],[w-6,h-6]],{type:"Sphere"});
+    const path=d3.geoPath(proj);
+    svg.append("g").selectAll("path").data(feats).join("path").attr("d",path)
+      .attr("stroke","#000").attr("stroke-width",.35)
+      .attr("fill",d=>nums[parseInt(d.id,10)]?"var(--nf-red)":"#242424");
+  });
+}
+function closeModal(){
+  $("#modal").classList.remove("open"); document.body.style.overflow="";
+  if(location.hash.startsWith("#/title")) history.back();
+  curDetail=null;
+}
+function closeModalSilent(){ $("#modal").classList.remove("open"); document.body.style.overflow=""; }
+$("#modal").addEventListener("click",e=>{ if(e.target.id==="modal") closeModal(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&$("#modal").classList.contains("open")) closeModal(); });
+
+/* ---- 공유 카드 이미지 (canvas) ---- */
+function makeCard(t){
+  const cv=$("#cardCanvas"), ctx=cv.getContext("2d");
+  ctx.fillStyle="#0b0b0b"; ctx.fillRect(0,0,1080,1350);
+  // 상단 브랜드
+  ctx.fillStyle="#E50914"; ctx.font="900 64px system-ui"; ctx.fillText("NERFLE",60,110);
+  ctx.fillStyle="#aaa"; ctx.font="500 30px system-ui"; ctx.fillText("한국에서 볼 수 없는 넷플릭스",60,155);
+  function drawText(){
+    ctx.fillStyle="#fff"; ctx.font="800 60px system-ui";
+    wrap(ctx,t.t,60,1150,960,66);
+    ctx.fillStyle="#E50914"; ctx.font="800 40px system-ui";
+    ctx.fillText(`★ ${t.v||"-"}  ·  ${mediaLabel(t.m)} ${t.y||""}`,60,1230);
+    ctx.fillStyle="#ccc"; ctx.font="600 34px system-ui";
+    ctx.fillText(`🌍 ${t._n}개국에서만 시청 가능 · 한국 미제공`,60,1285);
+    try{ const url=cv.toDataURL("image/png"); const a=document.createElement("a");
+      a.href=url; a.download=`nerfle_${t.id}.png`; a.click(); toast("공유 카드를 저장했어요"); }
+    catch(err){ toast("이미지 저장이 제한됐어요(브라우저 보안)"); }
+  }
+  if(t.p){ const img=new Image(); img.crossOrigin="anonymous";
+    img.onload=()=>{ const iw=760,ih=iw*1.5,ix=(1080-iw)/2,iy=210;
+      roundImg(ctx,img,ix,iy,iw,ih,18); drawText(); };
+    img.onerror=()=>drawText(); img.src=poster(t.p,"w780"); }
+  else drawText();
+}
+function roundImg(ctx,img,x,y,w,h,r){ ctx.save(); ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.clip();
+  ctx.drawImage(img,x,y,w,h); ctx.restore(); }
+function wrap(ctx,text,x,y,maxW,lh){ const words=[...text]; let line="",yy=y;
+  for(const ch of words){ if(ctx.measureText(line+ch).width>maxW){ ctx.fillText(line,x,yy); line=ch; yy+=lh; } else line+=ch; }
+  ctx.fillText(line,x,yy); }
+
+/* ---- 클립보드 ---- */
+function copy(text){ navigator.clipboard?.writeText(text).catch(()=>{}); }
+
+/* ============================================================
+   시작
+   ============================================================ */
+saveWish();
+// 위시리스트 공유 링크(?k=) 처리
+(function(){
+  const m=location.hash.match(/#\/wishlist\?k=([^&]+)/);
+  if(m){ decodeURIComponent(m[1]).split(",").forEach(k=>k&&wish.add(k)); saveWish(); location.hash="#/wishlist"; }
+})();
+router();
 </script>
 </body>
 </html>
