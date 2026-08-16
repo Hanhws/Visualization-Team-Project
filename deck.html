@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="NERFLE 발표 — 너에게 없는 넷플, 너플">
+<title>NERFLE · 발표</title>
+</head>
+<body>
+<style>
+  :root{
+    --bg:#0a0a0b; --bg2:#0e0e10; --panel:#151517; --line:#26262a; --line2:#333338;
+    --ink:#f5f5f4; --ink2:#c7c7c9; --muted:#8e8e94;
+    --red:#E50914; --red-dim:#8f1015; --gold:#E8B04B; --gold-dim:#7a5f27;
+    --track:#242428;
+    --fs-display:clamp(44px,7.2vw,116px);
+    --fs-h1:clamp(30px,4.4vw,66px);
+    --fs-h2:clamp(22px,2.6vw,38px);
+    --fs-lead:clamp(17px,1.7vw,25px);
+    --fs-body:clamp(14px,1.15vw,18px);
+    --fs-label:clamp(11px,.85vw,13px);
+    --sans:"Pretendard","Pretendard Variable",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  .deck{position:fixed;inset:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+  .deck *{font-family:var(--sans)}
+
+  /* film grain / vignette atmosphere */
+  .deck::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:60;
+    background:radial-gradient(130% 100% at 50% 0%,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;
+    padding:clamp(38px,7vw,120px);opacity:0}
+  .slide.active{display:flex;animation:enter .62s cubic-bezier(.16,.8,.3,1) both}
+  @keyframes enter{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.slide.active{animation:none;opacity:1}}
+
+  .eyebrow{display:flex;align-items:center;gap:12px;font-size:var(--fs-label);font-weight:700;
+    letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red)}
+  .eyebrow b{color:var(--red)}
+  .rule{width:64px;height:3px;background:var(--red);border-radius:2px;margin:26px 0}
+
+  h1.display{font-size:var(--fs-display);font-weight:900;line-height:.94;letter-spacing:-.03em;
+    text-wrap:balance;max-width:16ch}
+  h2.h1{font-size:var(--fs-h1);font-weight:800;line-height:1.02;letter-spacing:-.02em;text-wrap:balance;max-width:20ch}
+  h3.h2{font-size:var(--fs-h2);font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+  .lead{font-size:var(--fs-lead);font-weight:400;line-height:1.55;color:var(--ink2);max-width:44ch;text-wrap:pretty}
+  .lead b{color:var(--ink);font-weight:700}
+  .lead .r{color:var(--red);font-weight:700}
+  .body{font-size:var(--fs-body);line-height:1.6;color:var(--ink2)}
+  .muted{color:var(--muted)}
+  .gold{color:var(--gold)}
+  .red{color:var(--red)}
+  .thin{font-weight:300}
+  .nowrap{white-space:nowrap}
+
+  .wrap{max-width:1240px;width:100%;margin:0 auto}
+  .cols{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(26px,4vw,70px);align-items:center}
+  @media(max-width:820px){.cols{grid-template-columns:1fr;gap:26px}}
+  .stack>*+*{margin-top:22px}
+
+  /* 대형 지표 */
+  .kpis{display:flex;flex-wrap:wrap;gap:clamp(20px,3vw,54px);margin-top:8px}
+  .kpi .n{font-size:clamp(38px,5.4vw,84px);font-weight:900;letter-spacing:-.04em;line-height:1;
+    font-variant-numeric:tabular-nums}
+  .kpi .n small{font-size:.42em;font-weight:800;color:var(--muted);margin-left:6px;letter-spacing:0}
+  .kpi .k{font-size:var(--fs-label);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:12px}
+  .kpi.red .n{color:var(--red)} .kpi.gold .n{color:var(--gold)}
+
+  /* 카드 */
+  .card{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line);
+    border-radius:16px;padding:clamp(18px,2vw,26px)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:820px){.grid3,.grid4{grid-template-columns:1fr 1fr}}
+  .feat{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 16px}
+  .feat .ic{font-size:20px}
+  .feat .t{font-weight:800;margin-top:9px;font-size:15px}
+  .feat .d{color:var(--muted);font-size:12.5px;margin-top:5px;line-height:1.5}
+
+  /* 파이프라인 */
+  .pipe{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .pipe .step{flex:1;min-width:130px;background:var(--panel);border:1px solid var(--line);border-radius:13px;
+    padding:16px 16px;position:relative}
+  .pipe .step .s{font-size:var(--fs-label);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .pipe .step .v{font-size:clamp(21px,2.3vw,30px);font-weight:900;letter-spacing:-.02em;margin-top:8px;font-variant-numeric:tabular-nums}
+  .pipe .step .c{color:var(--muted);font-size:12.5px;margin-top:5px;line-height:1.45}
+  .pipe .arw{align-self:center;color:var(--red);font-weight:900;font-size:20px}
+  @media(max-width:820px){.pipe .arw{display:none}}
+
+  /* 차트 (HTML 바) */
+  .bars{display:flex;flex-direction:column;gap:11px;margin-top:4px}
+  .bar{display:grid;grid-template-columns:132px 1fr auto;align-items:center;gap:14px}
+  .bar .lab{font-size:14px;color:var(--ink2);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .trk{height:19px;background:var(--track);border-radius:6px;overflow:hidden}
+  .bar .fil{height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--red-dim),var(--red));
+    transition:width 1.05s cubic-bezier(.2,.8,.2,1)}
+  .bar.g1 .fil{background:linear-gradient(90deg,#6b1f0d,var(--gold))}
+  .bar .val{font-size:13.5px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
+  @media(max-width:820px){.bar{grid-template-columns:92px 1fr auto;gap:9px}.bar .lab{font-size:12px}}
+
+  .charttitle{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .charttitle .t{font-size:17px;font-weight:800}
+  .charttitle .u{font-size:var(--fs-label);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+  /* 연도 라인 차트 */
+  .linebox{position:relative}
+  #yearPath{stroke-dasharray:2200;stroke-dashoffset:2200}
+  .slide.active #yearPath{animation:draw 1.6s .2s ease forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  @media (prefers-reduced-motion:reduce){#yearPath{stroke-dashoffset:0;animation:none}}
+
+  /* 영상 placeholder */
+  .videoframe{aspect-ratio:16/9;width:100%;max-width:960px;border:2px dashed var(--line2);border-radius:18px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+    background:repeating-linear-gradient(45deg,#111 0 22px,#0d0d0e 22px 44px);color:var(--muted)}
+  .videoframe .play{width:76px;height:76px;border-radius:50%;border:2px solid var(--red);color:var(--red);
+    display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 0 30px rgba(229,9,20,.35)}
+  .videoframe .cap{font-size:15px;letter-spacing:.04em}
+  .videoframe .t15{font-size:13px;color:var(--red);font-weight:800;letter-spacing:.2em}
+
+  /* 비교/BM */
+  .vs{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center}
+  .vs .vsx{font-size:26px;font-weight:900;color:var(--red)}
+  .price{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .price .p{font-size:clamp(26px,3.2vw,42px);font-weight:900;letter-spacing:-.02em}
+  .price .p.strike{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:3px}
+  .price .l{color:var(--muted);font-size:13px;margin-top:8px}
+
+  .taglist{display:flex;flex-direction:column;gap:14px;margin-top:4px}
+  .taglist .item{display:flex;gap:14px;align-items:flex-start}
+  .taglist .n{color:var(--red);font-weight:900;font-size:15px;font-variant-numeric:tabular-nums;min-width:24px;line-height:1.5}
+  .taglist .tx{font-size:var(--fs-body);color:var(--ink2);line-height:1.5}
+  .taglist .tx b{color:var(--ink)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:6px}
+  .chip{border:1px solid var(--line2);border-radius:999px;padding:8px 15px;font-size:13.5px;font-weight:700;color:var(--ink2)}
+  .chip.on{background:var(--red);border-color:var(--red);color:#fff}
+  .chip.gold{border-color:var(--gold-dim);color:var(--gold)}
+
+  .link{color:var(--gold);font-weight:800;text-decoration:none;border-bottom:2px solid var(--gold-dim)}
+  .badge-ok{display:inline-flex;align-items:center;gap:8px;background:rgba(12,163,12,.12);border:1px solid #1c6b1c;
+    color:#5fd35f;font-weight:800;font-size:13px;padding:7px 13px;border-radius:999px}
+
+  /* 타이틀 슬라이드 */
+  #s1{align-items:flex-start;justify-content:center}
+  .logo-lock{display:flex;align-items:baseline;gap:2px}
+  .logo-lock .n{font-size:clamp(64px,13vw,220px);font-weight:900;letter-spacing:-.05em;line-height:.82;color:var(--red);
+    text-shadow:0 0 60px rgba(229,9,20,.35)}
+  .title-sub{font-size:var(--fs-h2);font-weight:300;color:var(--ink2);margin-top:10px}
+  .title-sub b{font-weight:800;color:var(--ink)}
+
+  .qrcard{background:#fff;border-radius:22px;padding:22px;display:inline-flex;flex-direction:column;
+    align-items:center;gap:13px;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  .qrcard svg{width:min(40vh,310px);height:auto;display:block}
+  .qrcard .scan{color:#0a0a0b;font-weight:800;font-size:15.5px;letter-spacing:.01em}
+  .qrcard .scan b{color:var(--red)}
+  /* 크롬: 진행바 · 카운터 · 노트 */
+  .progress{position:fixed;left:0;bottom:0;height:3px;background:var(--red);width:0;z-index:70;
+    transition:width .4s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 12px rgba(229,9,20,.6)}
+  .counter{position:fixed;right:26px;bottom:20px;z-index:70;font-size:13px;color:var(--muted);font-weight:700;
+    letter-spacing:.1em;font-variant-numeric:tabular-nums}
+  .counter b{color:var(--ink)}
+  .brandtag{position:fixed;left:26px;bottom:18px;z-index:70;font-size:12px;font-weight:900;letter-spacing:.2em;color:var(--red)}
+  .navhint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:70;font-size:12px;color:var(--muted);
+    display:flex;gap:14px;align-items:center}
+  .navhint kbd{background:var(--panel);border:1px solid var(--line2);border-bottom-width:2px;border-radius:6px;
+    padding:2px 8px;font-size:11px;font-weight:700;color:var(--ink2)}
+  .notes{position:fixed;left:0;right:0;bottom:0;z-index:80;background:rgba(8,8,9,.97);border-top:2px solid var(--red);
+    padding:18px 26px 22px;transform:translateY(105%);transition:transform .3s;max-height:42vh;overflow:auto}
+  .notes.show{transform:none}
+  .notes .h{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);font-weight:800;margin-bottom:8px}
+  .notes .c{font-size:15px;line-height:1.65;color:var(--ink2);max-width:80ch}
+  .notes .c b{color:var(--ink)}
+  .clickzone{position:fixed;top:0;bottom:0;width:22%;z-index:50}
+  .clickzone.left{left:0;cursor:w-resize} .clickzone.right{right:0;cursor:e-resize}
+</style>
+
+<div class="deck" id="deck">
+
+  <!-- 1 · 타이틀 -->
+  <section class="slide" id="s1" data-notes="발표 시작. 잠시 정적 → 로고를 보여주며 밝게 인사. ‘너에게 없는 넷플, 너플’ 팀명을 또렷하게 던지고 다음 슬라이드로.">
+    <div class="wrap">
+      <div class="eyebrow"><span class="dot"></span> DATA VISUALIZATION · TEAM PROJECT</div>
+      <div class="logo-lock" style="margin-top:24px"><span class="n">NERFLE</span></div>
+      <div class="title-sub">너에게 없는 넷플, <b>너플</b></div>
+      <div class="rule"></div>
+      <p class="lead">한국 넷플릭스에는 없지만, 전 세계 어딘가엔 있는 작품 <b class="r">1,640편</b>.<br>하나의 구독으로 더 많이 보는 법.</p>
+    </div>
+  </section>
+
+  <!-- 2 · 훅 -->
+  <section class="slide" id="s2" data-notes="관객 참여. ‘OTT 서비스 이용하시는 분?’ 손 들어달라 요청하고 실제로 세어보는 제스처. ‘거의 다 드셨네요’ 리액션으로 공감대 시작.">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> 잠깐, 질문 하나</div>
+      <h1 class="display">OTT 서비스<br>쓰고 계신가요?</h1>
+      <p class="lead">넷플릭스, 티빙, 디즈니+, 왓챠…<br><b>쓰시는 분, 손 한번 들어주시겠어요?</b></p>
+      <div class="chips">
+        <span class="chip on">넷플릭스</span><span class="chip">티빙</span><span class="chip">웨이브</span>
+        <span class="chip">디즈니+</span><span class="chip">왓챠</span><span class="chip">쿠팡플레이</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · 공감대 -->
+  <section class="slide" id="s3" data-notes="개인 경험으로 공감. ‘넷플 켜면 볼 게 금방 떨어진다’ → 그렇다고 2개 이상 구독하자니 월 3만원 넘게 든다. 부담을 숫자로 체감시키기.">
+    <div class="wrap cols">
+      <div class="stack">
+        <div class="eyebrow"><span class="dot"></span> 다들 겪는 일</div>
+        <h2 class="h1">막상 켜면,<br><span class="red">볼 게 없다.</span></h2>
+        <p class="lead">그렇다고 OTT를 <b>두세 개씩</b> 결제하자니<br>매달 나가는 돈이 만만치 않죠.</p>
+      </div>
+      <div class="stack">
+        <div class="vs">
+          <div class="price"><div class="p">₩13,500</div><div class="l">넷플릭스 1개 / 월</div></div>
+          <div class="vsx">→</div>
+          <div class="price"><div class="p strike">₩38,000+</div><div class="l">3개 구독 시 / 월</div></div>
+        </div>
+        <p class="body muted">더 보려고 더 결제한다 — 이게 정말 유일한 방법일까?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · 문제 정의 -->
+  <section class="slide" id="s4" data-notes="핵심 질문으로 전환(TED의 turn). ‘하나의 넷플릭스로 더 많이 볼 순 없을까?’ → 사실 넷플릭스는 나라마다 카탈로그가 다르다. 한국엔 없는 작품이 해외엔 있다. 그걸 알아보기로 했다 = 우리가 이걸 만든 이유. [평가기준 1]">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> 그래서 던진 질문</div>
+      <h2 class="h1">같은 넷플릭스인데,<br>왜 <span class="red">나라마다 다를까?</span></h2>
+      <p class="lead">넷플릭스 카탈로그는 <b>국가마다 다릅니다.</b><br>한국에선 막힌 작품이, 다른 나라 계정엔 열려 있죠.<br><span class="r">“그럼 한국에 없는 건 대체 뭐가 있을까?”</span></p>
+      <p class="body muted">— 이 질문이 NERFLE의 출발점이 됐습니다.</p>
+    </div>
+  </section>
+
+  <!-- 5 · 광고 영상 자리 -->
+  <section class="slide" id="s5" data-notes="15초 브랜드 광고 영상 재생. (지루해하는 주인공 → 요정 등장 → 한국 미제공 작품 사이트 공개 → ‘너에게 없는 넷플, 너플’). 영상 끝나면 바로 다음 슬라이드로.">
+    <div class="wrap" style="align-items:center;text-align:center;display:flex;flex-direction:column">
+      <div class="eyebrow" style="justify-content:center"><span class="dot"></span> 15초 브랜드 필름</div>
+      <div class="videoframe" style="margin-top:22px">
+        <div class="play">▶</div>
+        <div class="cap">여기에서 광고 영상 재생</div>
+        <div class="t15">0:15</div>
+      </div>
+      <p class="body muted" style="margin-top:18px">지루한 주인공 → 요정 등장 → 너플 공개 → “너에게 없는 넷플, 너플”</p>
+    </div>
+  </section>
+
+  <!-- 6 · 솔루션 정의 -->
+  <section class="slide" id="s6" data-notes="서비스 한 줄 정의. NERFLE = 한국에서 볼 수 없는 넷플릭스 작품을, 어느 나라에서 볼 수 있는지까지 알려주는 지도. 대표 숫자 3개를 던지고 데모로 넘어감.">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> 우리가 만든 것</div>
+      <h2 class="h1"><span class="red">NERFLE</span> — 한국에서<br>볼 수 없는 넷플릭스.</h2>
+      <p class="lead">한국 미제공 작품을 모아, <b>어느 나라에서 볼 수 있는지</b>까지<br>지도·차트로 보여주는 웹 서비스.</p>
+      <div class="kpis">
+        <div class="kpi red"><div class="n">1,640<small>편</small></div><div class="k">한국 미제공 고유작</div></div>
+        <div class="kpi"><div class="n">127<small>개국</small></div><div class="k">수집한 넷플릭스</div></div>
+        <div class="kpi gold"><div class="n">250<small>편</small></div><div class="k">평점 8.0+ 명작</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · 데이터 파이프라인 [기준2] -->
+  <section class="slide" id="s7" data-notes="[평가기준 2 — 데이터 충실도] 우리 강점. TMDB API로 127개국 넷플릭스 카탈로그 수집 → 한국(기준국)과 대조해 미제공 판별 → 나라마다 중복되는 26,961행을 고유 1,640편으로 정규화(중복 제거) → 연령등급 1,571편 별도 수집. 결과적으로 6.3MB를 1.27MB로 경량화.">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> 데이터 수집·정제 <b>· 평가기준 2</b></div>
+      <h3 class="h2">원본 수집부터 정규화까지</h3>
+      <div class="pipe">
+        <div class="step"><div class="s">01 수집</div><div class="v">127개국</div><div class="c">TMDB API로 나라별 넷플릭스 카탈로그</div></div>
+        <div class="arw">→</div>
+        <div class="step"><div class="s">02 대조</div><div class="v">한국 기준</div><div class="c">한국 카탈로그와 비교해 ‘미제공’ 판별</div></div>
+        <div class="arw">→</div>
+        <div class="step"><div class="s">03 정규화</div><div class="v">26,961 → 1,640</div><div class="c">나라별 중복 제거, 고유 작품 1벌로</div></div>
+        <div class="arw">→</div>
+        <div class="step"><div class="s">04 보강</div><div class="v">등급 1,571편</div><div class="c">연령등급 추가 수집·매핑</div></div>
+      </div>
+      <div class="grid3" style="margin-top:8px">
+        <div class="card"><div class="body"><b class="gold">6.3MB → 1.27MB</b><br><span class="muted">중복 제거로 5배 경량화, 로딩 최적화</span></div></div>
+        <div class="card"><div class="body"><b>고유키 = (미디어, TMDB ID)</b><br><span class="muted">나라는 인덱스로 참조해 정규화</span></div></div>
+        <div class="card"><div class="body"><b>사전 집계 내장</b><br><span class="muted">장르·연도·언어·독점률 랭킹까지 미리 계산</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · 차트1 [기준3] -->
+  <section class="slide" id="s8" data-notes="[평가기준 3 — 적합한 차트] 메시지에 맞는 막대차트. 왼쪽: 한국 대비 독점 작품이 많은 나라 랭킹(미국 381편이 최다). 오른쪽: 미제공작이 몰린 장르(드라마·코미디 순). ‘한국이 뭘 놓치고 있나’를 한눈에.">
+    <div class="wrap cols" style="align-items:start">
+      <div class="card">
+        <div class="charttitle"><span class="t">콘텐츠 부자 나라 TOP 8</span><span class="u">편 · 한국 미제공</span></div>
+        <div class="bars" id="rankBars"></div>
+      </div>
+      <div class="card">
+        <div class="charttitle"><span class="t">장르별 미제공 작품</span><span class="u">편</span></div>
+        <div class="bars" id="genreBars"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · 차트2 [기준3] -->
+  <section class="slide" id="s9" data-notes="[평가기준 3] 시계열엔 라인차트. 공개연도별 한국 미제공작 추이 — 2022년 이후 급증(신작일수록 한국에 안 들어오는 경향). 오른쪽 등급 분포도 함께.">
+    <div class="wrap cols" style="align-items:center">
+      <div class="card">
+        <div class="charttitle"><span class="t">공개 연도별 추이</span><span class="u">2000 → 2026</span></div>
+        <div class="linebox" id="yearBox"></div>
+        <p class="body muted" style="margin-top:14px">최근일수록 늘어납니다 — <b class="gold">2022년 이후 급증.</b> 신작일수록 한국엔 늦게, 혹은 안 들어와요.</p>
+      </div>
+      <div class="stack">
+        <div class="eyebrow"><span class="dot"></span> 한눈에 보는 특징</div>
+        <h3 class="h2">최신작일수록<br>더 많이 <span class="red">놓친다</span></h3>
+        <div class="chips">
+          <span class="chip on">15세 621</span><span class="chip">19세 417</span>
+          <span class="chip">12세 332</span><span class="chip">전체 201</span>
+        </div>
+        <p class="body muted">연령등급 분포 · 1,571편 기준</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · 인터랙티비티 [기준4] -->
+  <section class="slide" id="s10" data-notes="[평가기준 4 — 인터랙티비티/디자인] 여기서 실제 사이트로 전환해 라이브 데모. ① 지도에서 나라 클릭 ② 장르·평점·초성 검색 필터 ③ 나라 vs 나라 비교 ④ 작품 클릭 → 어디서 볼 수 있는지 지도. 데모 후 슬라이드 복귀.">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> 인터랙티비티 <b>· 평가기준 4</b> · 라이브 데모</div>
+      <h3 class="h2">보는 게 아니라, <span class="red">탐험한다</span></h3>
+      <div class="grid4">
+        <div class="feat"><div class="ic">🗺️</div><div class="t">독점률 지도</div><div class="d">색이 진할수록 미제공 많은 나라. 클릭하면 목록으로</div></div>
+        <div class="feat"><div class="ic">🎛️</div><div class="t">복합 필터</div><div class="d">장르·평점·연도·희소성 + 초성/오타 검색</div></div>
+        <div class="feat"><div class="ic">🆚</div><div class="t">나라 비교</div><div class="d">일본에만·미국에만·공통을 교집합/차집합으로</div></div>
+        <div class="feat"><div class="ic">🌍</div><div class="t">어디서 보나</div><div class="d">작품별 시청 가능 국가를 지도에 하이라이트</div></div>
+      </div>
+      <p class="body muted">▶ 지금부터 <b class="gold">실제 사이트</b>로 넘어가 시연합니다.</p>
+    </div>
+  </section>
+
+  <!-- 11 · 기능 전체 [기준6] -->
+  <section class="slide" id="s11" data-notes="[평가기준 6 — 기능/구성/사용성] 서비스 기능 전체 조망. 발견·개인화·스토리텔링 세 축. 로그인 없이 localStorage로 찜/여권/최소국가조합까지. 공유 딥링크·공유카드로 바이럴 고리도.">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> 기능 전체 <b>· 평가기준 6</b></div>
+      <h3 class="h2">발견 · 개인화 · 스토리텔링</h3>
+      <div class="grid4">
+        <div class="feat"><div class="ic">💎</div><div class="t">숨은 명작</div><div class="d">평점 8+ & 소수 국가에만 있는 보석</div></div>
+        <div class="feat"><div class="ic">🎲</div><div class="t">오늘의 한 편</div><div class="d">매일 바뀌는 랜덤 추천</div></div>
+        <div class="feat"><div class="ic">✈️</div><div class="t">여행지 매칭</div><div class="d">그 나라에서만 볼 수 있는 작품</div></div>
+        <div class="feat"><div class="ic">📌</div><div class="t">찜 · localStorage</div><div class="d">로그인 없이 저장</div></div>
+        <div class="feat"><div class="ic">🗺️</div><div class="t">넷플릭스 여권</div><div class="d">찜한 작품 원산지 스탬프 지도</div></div>
+        <div class="feat"><div class="ic">🎯</div><div class="t">최소 국가 조합</div><div class="d">찜 전부 보는 최소 나라 계산</div></div>
+        <div class="feat"><div class="ic">📊</div><div class="t">인사이트</div><div class="d">‘한국이 놓치는 것’ 대시보드</div></div>
+        <div class="feat"><div class="ic">🔗</div><div class="t">공유</div><div class="d">딥링크 + 공유 카드 이미지</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 · 배포 [기준5] -->
+  <section class="slide" id="s12" data-notes="[평가기준 5 — 실제 배포/작동] GitHub main에 푸시하면 Vercel이 자동 배포. 지금 이 순간 접속되는 실제 URL. 세 도메인 모두 200 OK 확인. cleanUrls 적용.">
+    <div class="wrap cols" style="align-items:center">
+      <div class="stack">
+        <div class="eyebrow"><span class="dot"></span> 실제 배포 <b>· 평가기준 5</b></div>
+        <h3 class="h2">지금, <span class="red">라이브</span>입니다</h3>
+        <p class="lead">GitHub <b>main</b>에 푸시하면 <b>Vercel</b>이 자동 배포.<br>누구나 접속 가능한 실제 서비스로 돌아갑니다.</p>
+        <span class="badge-ok">● 200 OK · 정상 작동 중</span>
+      </div>
+      <div class="card stack">
+        <div class="body muted" style="letter-spacing:.1em;text-transform:uppercase;font-size:12px">Production URL</div>
+        <a class="link" style="font-size:clamp(16px,2vw,22px)" href="https://visualization-team-project.vercel.app" target="_blank" rel="noopener">visualization-team-project.vercel.app</a>
+        <div class="body muted">GitHub 푸시 → Vercel 빌드 → 자동 재배포<br>· cleanUrls 적용 · 정적 호스팅</div>
+        <div class="chips"><span class="chip">GitHub Actions 흐름</span><span class="chip gold">Auto-deploy on push</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 · AI 활용 [기준7] -->
+  <section class="slide" id="s13" data-notes="[평가기준 7 — AI 활용] 구체적으로. Claude(Opus)와 페어로: ① 파이썬 데이터 파이프라인(수집·정규화) 설계·작성 ② 127개국 연령등급 병렬 수집 스크립트 ③ D3 지도·필터·대시보드까지 웹앱 전체 구현 ④ 데이터 정합성·핵심 로직 검증. ‘무엇을 어떻게 시켰는지’를 강조.">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> AI 활용 <b>· 평가기준 7</b></div>
+      <h3 class="h2">Claude와 <span class="red">페어 프로그래밍</span></h3>
+      <div class="taglist">
+        <div class="item"><span class="n">01</span><span class="tx"><b>데이터 파이프라인 설계·작성</b> — TMDB 수집, 한국 대조, 26,961행 → 1,640편 정규화 스크립트</span></div>
+        <div class="item"><span class="n">02</span><span class="tx"><b>연령등급 병렬 수집</b> — 1,640편 등급을 멀티스레드로 수집·한국식 매핑</span></div>
+        <div class="item"><span class="n">03</span><span class="tx"><b>웹앱 전체 구현</b> — D3 지도·코로플레스, 복합 필터, 인사이트 대시보드, 찜·여권·상세 모달</span></div>
+        <div class="item"><span class="n">04</span><span class="tx"><b>검증·배포</b> — 데이터 정합성·핵심 로직 스모크 테스트, Git 커밋 & Vercel 배포까지</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 · 비즈니스 모델 -->
+  <section class="slide" id="s14" data-notes="사업 구상까지 확장. 트래픽이 모이면 → 배너·광고, 특히 VPN 업체 스폰서십이 자연스러운 수익 모델. ‘해외 넷플릭스를 보고 싶은 사람’과 ‘VPN’은 타겟이 정확히 겹친다. 제휴 커미션 구조.">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> 여기서 한 걸음 더 · 비즈니스 모델</div>
+      <h3 class="h2">타겟이 <span class="red">정확히 겹친다</span></h3>
+      <p class="lead">‘해외 넷플릭스를 보고 싶은 사람’과 <b>VPN 이용자</b>는 같은 사람.<br>NERFLE의 트래픽은 그 자체로 정교한 광고 지면이 됩니다.</p>
+      <div class="grid3">
+        <div class="card"><div class="body"><b class="gold">VPN 스폰서십</b><br><span class="muted">작품 상세에 ‘이 나라에서 보기’ 제휴 링크</span></div></div>
+        <div class="card"><div class="body"><b>배너·네이티브 광고</b><br><span class="muted">OTT·콘텐츠 타겟 광고 지면</span></div></div>
+        <div class="card"><div class="body"><b>제휴 커미션</b><br><span class="muted">가입 전환 기반 성과형 수익</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 · 클로징 -->
+  <section class="slide" id="s15" data-notes="마무리. 로고 다시 보여주며 한 박자 쉬고 — ‘너에게 없는 넷플, 너플이었습니다. 감사합니다.’ 또렷하게. QR을 가리키며 ‘지금 폰으로 스캔하면 바로 들어가실 수 있어요.’ 질문 받기.">
+    <div class="wrap cols" style="align-items:center">
+      <div class="stack">
+        <div class="eyebrow"><span class="dot"></span> 감사합니다</div>
+        <div class="logo-lock" style="margin-top:8px"><span class="n">NERFLE</span></div>
+        <h2 class="h1" style="margin-top:14px">너에게 없는 넷플,<br><span class="red">너플</span>이었습니다.</h2>
+        <p class="lead">지금 <b>폰으로 QR을 스캔</b>하면 바로 접속돼요.<br><a class="link" href="https://visualization-team-project.vercel.app" target="_blank" rel="noopener">visualization-team-project.vercel.app</a></p>
+      </div>
+      <div style="display:flex;justify-content:center">
+        <div class="qrcard">
+          <svg viewBox="0 0 41 41" shape-rendering="crispEdges" role="img" aria-label="너플 사이트 QR 코드"><rect width="41" height="41" fill="#fff"/><path d="M4 4h7v1h-7zM13 4h2v1h-2zM18 4h1v1h-1zM22 4h2v1h-2zM25 4h1v1h-1zM27 4h1v1h-1zM30 4h7v1h-7zM4 5h1v1h-1zM10 5h1v1h-1zM12 5h2v1h-2zM15 5h1v1h-1zM21 5h1v1h-1zM24 5h1v1h-1zM26 5h3v1h-3zM30 5h1v1h-1zM36 5h1v1h-1zM4 6h1v1h-1zM6 6h3v1h-3zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h2v1h-2zM18 6h3v1h-3zM24 6h1v1h-1zM30 6h1v1h-1zM32 6h3v1h-3zM36 6h1v1h-1zM4 7h1v1h-1zM6 7h3v1h-3zM10 7h1v1h-1zM15 7h2v1h-2zM20 7h1v1h-1zM22 7h3v1h-3zM26 7h1v1h-1zM28 7h1v1h-1zM30 7h1v1h-1zM32 7h3v1h-3zM36 7h1v1h-1zM4 8h1v1h-1zM6 8h3v1h-3zM10 8h1v1h-1zM16 8h1v1h-1zM23 8h1v1h-1zM25 8h2v1h-2zM28 8h1v1h-1zM30 8h1v1h-1zM32 8h3v1h-3zM36 8h1v1h-1zM4 9h1v1h-1zM10 9h1v1h-1zM13 9h3v1h-3zM17 9h1v1h-1zM19 9h2v1h-2zM22 9h2v1h-2zM30 9h1v1h-1zM36 9h1v1h-1zM4 10h7v1h-7zM12 10h1v1h-1zM14 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM22 10h1v1h-1zM24 10h1v1h-1zM26 10h1v1h-1zM28 10h1v1h-1zM30 10h7v1h-7zM16 11h1v1h-1zM18 11h1v1h-1zM20 11h3v1h-3zM24 11h1v1h-1zM28 11h1v1h-1zM5 12h3v1h-3zM9 12h2v1h-2zM13 12h3v1h-3zM17 12h1v1h-1zM19 12h5v1h-5zM25 12h1v1h-1zM34 12h2v1h-2zM5 13h5v1h-5zM11 13h3v1h-3zM15 13h2v1h-2zM23 13h3v1h-3zM27 13h1v1h-1zM30 13h2v1h-2zM33 13h2v1h-2zM36 13h1v1h-1zM7 14h2v1h-2zM10 14h3v1h-3zM17 14h3v1h-3zM21 14h1v1h-1zM25 14h1v1h-1zM27 14h2v1h-2zM31 14h3v1h-3zM35 14h2v1h-2zM7 15h2v1h-2zM11 15h4v1h-4zM17 15h1v1h-1zM19 15h2v1h-2zM24 15h1v1h-1zM26 15h1v1h-1zM28 15h4v1h-4zM33 15h1v1h-1zM4 16h1v1h-1zM9 16h2v1h-2zM13 16h1v1h-1zM15 16h2v1h-2zM19 16h2v1h-2zM22 16h3v1h-3zM26 16h1v1h-1zM29 16h1v1h-1zM31 16h3v1h-3zM5 17h1v1h-1zM8 17h2v1h-2zM12 17h3v1h-3zM18 17h1v1h-1zM20 17h2v1h-2zM23 17h1v1h-1zM25 17h1v1h-1zM28 17h1v1h-1zM31 17h1v1h-1zM34 17h2v1h-2zM4 18h7v1h-7zM14 18h2v1h-2zM17 18h1v1h-1zM20 18h5v1h-5zM26 18h1v1h-1zM30 18h2v1h-2zM33 18h1v1h-1zM7 19h2v1h-2zM11 19h1v1h-1zM13 19h1v1h-1zM16 19h1v1h-1zM18 19h1v1h-1zM20 19h1v1h-1zM22 19h1v1h-1zM25 19h3v1h-3zM29 19h2v1h-2zM32 19h1v1h-1zM34 19h1v1h-1zM4 20h1v1h-1zM10 20h1v1h-1zM12 20h1v1h-1zM18 20h1v1h-1zM24 20h3v1h-3zM28 20h3v1h-3zM32 20h3v1h-3zM4 21h1v1h-1zM6 21h2v1h-2zM9 21h1v1h-1zM13 21h1v1h-1zM15 21h1v1h-1zM20 21h1v1h-1zM22 21h1v1h-1zM24 21h1v1h-1zM27 21h2v1h-2zM30 21h1v1h-1zM32 21h2v1h-2zM35 21h2v1h-2zM4 22h1v1h-1zM6 22h1v1h-1zM10 22h2v1h-2zM13 22h1v1h-1zM15 22h1v1h-1zM21 22h1v1h-1zM24 22h1v1h-1zM29 22h1v1h-1zM31 22h2v1h-2zM34 22h2v1h-2zM4 23h4v1h-4zM9 23h1v1h-1zM12 23h1v1h-1zM14 23h2v1h-2zM17 23h2v1h-2zM24 23h1v1h-1zM26 23h1v1h-1zM29 23h2v1h-2zM32 23h1v1h-1zM35 23h2v1h-2zM10 24h1v1h-1zM12 24h1v1h-1zM17 24h1v1h-1zM19 24h4v1h-4zM25 24h1v1h-1zM33 24h2v1h-2zM4 25h1v1h-1zM6 25h3v1h-3zM12 25h2v1h-2zM16 25h4v1h-4zM23 25h2v1h-2zM27 25h2v1h-2zM30 25h1v1h-1zM33 25h1v1h-1zM36 25h1v1h-1zM7 26h4v1h-4zM12 26h5v1h-5zM18 26h2v1h-2zM21 26h2v1h-2zM24 26h2v1h-2zM27 26h1v1h-1zM29 26h2v1h-2zM32 26h1v1h-1zM35 26h2v1h-2zM5 27h1v1h-1zM8 27h2v1h-2zM11 27h3v1h-3zM15 27h1v1h-1zM18 27h1v1h-1zM20 27h2v1h-2zM24 27h1v1h-1zM26 27h1v1h-1zM28 27h3v1h-3zM32 27h2v1h-2zM4 28h1v1h-1zM6 28h1v1h-1zM8 28h1v1h-1zM10 28h1v1h-1zM12 28h3v1h-3zM19 28h1v1h-1zM23 28h1v1h-1zM26 28h1v1h-1zM28 28h6v1h-6zM35 28h2v1h-2zM12 29h3v1h-3zM16 29h1v1h-1zM19 29h1v1h-1zM21 29h3v1h-3zM28 29h1v1h-1zM32 29h2v1h-2zM4 30h7v1h-7zM13 30h1v1h-1zM15 30h1v1h-1zM23 30h1v1h-1zM27 30h2v1h-2zM30 30h1v1h-1zM32 30h1v1h-1zM4 31h1v1h-1zM10 31h1v1h-1zM12 31h2v1h-2zM15 31h8v1h-8zM24 31h5v1h-5zM32 31h3v1h-3zM4 32h1v1h-1zM6 32h3v1h-3zM10 32h1v1h-1zM13 32h2v1h-2zM19 32h2v1h-2zM24 32h9v1h-9zM34 32h3v1h-3zM4 33h1v1h-1zM6 33h3v1h-3zM10 33h1v1h-1zM12 33h4v1h-4zM20 33h1v1h-1zM22 33h1v1h-1zM26 33h2v1h-2zM31 33h1v1h-1zM35 33h2v1h-2zM4 34h1v1h-1zM6 34h3v1h-3zM10 34h1v1h-1zM12 34h1v1h-1zM17 34h3v1h-3zM22 34h1v1h-1zM25 34h1v1h-1zM30 34h2v1h-2zM34 34h1v1h-1zM4 35h1v1h-1zM10 35h1v1h-1zM12 35h1v1h-1zM14 35h2v1h-2zM17 35h4v1h-4zM26 35h1v1h-1zM28 35h1v1h-1zM30 35h3v1h-3zM36 35h1v1h-1zM4 36h7v1h-7zM13 36h3v1h-3zM17 36h2v1h-2zM21 36h2v1h-2zM24 36h2v1h-2zM27 36h1v1h-1zM30 36h1v1h-1zM32 36h3v1h-3z" fill="#0a0a0b"/></svg>
+          <div class="scan">📱 스캔하면 <b>바로 접속</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 크롬 -->
+  <div class="progress" id="progress"></div>
+  <div class="counter" id="counter"><b>01</b> / 15</div>
+  <div class="brandtag">NERFLE</div>
+  <div class="navhint" id="navhint"><span><kbd>←</kbd> <kbd>→</kbd> 이동</span><span><kbd>N</kbd> 발표자 노트</span><span><kbd>F</kbd> 전체화면</span></div>
+  <div class="clickzone left" id="zoneL"></div>
+  <div class="clickzone right" id="zoneR"></div>
+  <div class="notes" id="notes"><div class="h">발표자 노트</div><div class="c" id="notesC"></div></div>
+</div>
+
+<script>
+(function(){
+  const slides=[...document.querySelectorAll('.slide')];
+  const N=slides.length;
+  let i=0;
+  const counter=document.getElementById('counter');
+  const progress=document.getElementById('progress');
+  const notes=document.getElementById('notes');
+  const notesC=document.getElementById('notesC');
+  const navhint=document.getElementById('navhint');
+  const pad=n=>String(n).padStart(2,'0');
+
+  function show(n){
+    i=Math.max(0,Math.min(N-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    counter.innerHTML=`<b>${pad(i+1)}</b> / ${N}`;
+    progress.style.width=((i+1)/N*100)+'%';
+    notesC.innerHTML=slides[i].dataset.notes||'';
+    navhint.style.opacity=(i===0?1:0.0001);
+    if(slides[i].id==='s8')drawBars();
+    if(slides[i].id==='s9')drawYear();
+  }
+  function next(){show(i+1)} function prev(){show(i-1)}
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();next()}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();prev()}
+    else if(e.key==='Home'){show(0)} else if(e.key==='End'){show(N-1)}
+    else if(e.key==='n'||e.key==='N'){notes.classList.toggle('show')}
+    else if(e.key==='f'||e.key==='F'){const d=document.documentElement;
+      if(!document.fullscreenElement)d.requestFullscreen&&d.requestFullscreen();else document.exitFullscreen()}
+    else if(/^[1-9]$/.test(e.key)){show(+e.key-1)}
+  });
+  document.getElementById('zoneL').addEventListener('click',prev);
+  document.getElementById('zoneR').addEventListener('click',next);
+  // 스와이프
+  let x0=null;
+  document.getElementById('deck').addEventListener('touchstart',e=>x0=e.touches[0].clientX,{passive:true});
+  document.getElementById('deck').addEventListener('touchend',e=>{
+    if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;
+    if(Math.abs(dx)>50){dx<0?next():prev()}x0=null;});
+
+  /* ---- 차트 데이터 (실제 수치) ---- */
+  const RANK=[["미국",381],["캐나다",318],["스위스",302],["프랑스령 기아나",290],["호주",286],["일본",285],["벨기에",281],["멕시코",279]];
+  const GENRE=[["드라마",644],["코미디",579],["액션",433],["스릴러",354],["애니메이션",298],["모험",278],["범죄",277],["판타지",193]];
+  const YEAR=[[2000,22],[2001,31],[2002,31],[2003,33],[2004,38],[2005,38],[2006,43],[2007,47],[2008,33],[2009,38],[2010,39],[2011,50],[2012,47],[2013,64],[2014,62],[2015,64],[2016,69],[2017,65],[2018,66],[2019,56],[2020,36],[2021,56],[2022,80],[2023,89],[2024,90],[2025,81],[2026,31]];
+
+  let barsDone=false;
+  function barRows(el,rows,cls){
+    const max=Math.max(...rows.map(r=>r[1]));
+    el.innerHTML=rows.map(r=>`<div class="bar ${cls||''}"><div class="lab" title="${r[0]}">${r[0]}</div>
+      <div class="trk"><div class="fil" data-w="${(r[1]/max*100).toFixed(1)}"></div></div>
+      <div class="val">${r[1].toLocaleString()}</div></div>`).join('');
+  }
+  function drawBars(){
+    if(barsDone)return;barsDone=true;
+    barRows(document.getElementById('rankBars'),RANK,'');
+    barRows(document.getElementById('genreBars'),GENRE,'g1');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      document.querySelectorAll('#s8 .fil').forEach(f=>f.style.width=f.dataset.w+'%');
+    }));
+  }
+  let yearDone=false;
+  function drawYear(){
+    if(yearDone)return;yearDone=true;
+    const box=document.getElementById('yearBox');
+    const W=box.clientWidth||620,H=250,m={t:18,r:16,b:30,l:34};
+    const xs=YEAR.map(d=>d[0]),maxY=Math.max(...YEAR.map(d=>d[1]));
+    const X=v=>m.l+(v-xs[0])/(xs[xs.length-1]-xs[0])*(W-m.l-m.r);
+    const Y=v=>H-m.b-(v/maxY)*(H-m.t-m.b);
+    const line=YEAR.map((d,k)=>(k?'L':'M')+X(d[0]).toFixed(1)+' '+Y(d[1]).toFixed(1)).join(' ');
+    const area=`M${X(YEAR[0][0])} ${H-m.b} `+YEAR.map(d=>'L'+X(d[0]).toFixed(1)+' '+Y(d[1]).toFixed(1)).join(' ')+` L${X(YEAR[YEAR.length-1][0])} ${H-m.b} Z`;
+    const yt=[0,Math.round(maxY/2),maxY];
+    const xt=YEAR.filter((d,k)=>k%5===0||k===YEAR.length-1);
+    const peak=YEAR.reduce((a,b)=>b[1]>a[1]?b:a);
+    box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;overflow:visible">
+      ${yt.map(t=>`<line x1="${m.l}" x2="${W-m.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="#26262a"/>
+        <text x="${m.l-7}" y="${Y(t)+4}" fill="#8e8e94" font-size="11" text-anchor="end">${t}</text>`).join('')}
+      ${xt.map(d=>`<text x="${X(d[0])}" y="${H-9}" fill="#8e8e94" font-size="11" text-anchor="middle">${d[0]}</text>`).join('')}
+      <path d="${area}" fill="rgba(229,9,20,.13)"/>
+      <path id="yearPath" d="${line}" fill="none" stroke="#E50914" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${X(peak[0])}" cy="${Y(peak[1])}" r="5.5" fill="#E8B04B" stroke="#0a0a0b" stroke-width="2"/>
+      <text x="${X(peak[0])}" y="${Y(peak[1])-12}" fill="#E8B04B" font-size="12.5" font-weight="800" text-anchor="middle">${peak[0]} · ${peak[1]}편</text>
+    </svg>`;
+  }
+
+  show(0);
+})();
+</script>
+
+</body>
+</html>
