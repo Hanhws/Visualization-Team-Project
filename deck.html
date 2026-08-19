@@ -188,7 +188,7 @@
       <div class="logo-lock" style="margin-top:24px"><span class="n">NERFLE</span></div>
       <div class="title-sub">너에게 없는 넷플, <b>너플</b></div>
       <div class="rule"></div>
-      <p class="lead">한국 넷플릭스에는 없지만, 전 세계 어딘가엔 있는 작품 <b class="r">1,640편</b>.<br>하나의 구독으로 더 많이 보는 법.</p>
+      <p class="lead">한국 넷플릭스에는 없지만, 전 세계 어딘가엔 있는 작품 <b class="r">13,322편</b>.<br>하나의 구독으로 더 많이 보는 법.</p>
     </div>
   </section>
 
@@ -254,29 +254,29 @@
       <h2 class="h1"><span class="red">NERFLE</span> — 한국에서<br>볼 수 없는 넷플릭스.</h2>
       <p class="lead">한국 미제공 작품을 모아, <b>어느 나라에서 볼 수 있는지</b>까지<br>지도·차트로 보여주는 웹 서비스.</p>
       <div class="kpis">
-        <div class="kpi red"><div class="n">1,640<small>편</small></div><div class="k">한국 미제공 고유작</div></div>
-        <div class="kpi"><div class="n">127<small>개국</small></div><div class="k">수집한 넷플릭스</div></div>
-        <div class="kpi gold"><div class="n">250<small>편</small></div><div class="k">평점 8.0+ 명작</div></div>
+        <div class="kpi red"><div class="n">13,322<small>편</small></div><div class="k">한국 미제공 고유작</div></div>
+        <div class="kpi"><div class="n">126<small>개국</small></div><div class="k">수집한 넷플릭스</div></div>
+        <div class="kpi gold"><div class="n">1,046<small>편</small></div><div class="k">평점 8.0+ 명작</div></div>
       </div>
     </div>
   </section>
 
   <!-- 7 · 데이터 파이프라인 [기준2] -->
-  <section class="slide" id="s7" data-notes="[평가기준 2 — 데이터 충실도] 우리 강점. TMDB API로 127개국 넷플릭스 카탈로그 수집 → 한국(기준국)과 대조해 미제공 판별 → 나라마다 중복되는 26,961행을 고유 1,640편으로 정규화(중복 제거) → 연령등급 1,571편 별도 수집. 결과적으로 6.3MB를 1.27MB로 경량화.">
+  <section class="slide" id="s7" data-notes="[평가기준 2 — 데이터 충실도] 우리 강점. TMDB API로 126개국 넷플릭스 카탈로그 수집 → 한국(기준국)과 대조해 미제공 판별 → 나라마다 중복되는 204,286행을 고유 13,322편으로 정규화(중복 93% 제거) → 연령등급 4,992편 별도 수집. 사전 집계를 내장해 단일 data.js로 서빙.">
     <div class="wrap stack">
       <div class="eyebrow"><span class="dot"></span> 데이터 수집·정제 <b>· 평가기준 2</b></div>
       <h3 class="h2">원본 수집부터 정규화까지</h3>
       <div class="pipe">
-        <div class="step"><div class="s">01 수집</div><div class="v">127개국</div><div class="c">TMDB API로 나라별 넷플릭스 카탈로그</div></div>
+        <div class="step"><div class="s">01 수집</div><div class="v">126개국</div><div class="c">TMDB API로 나라별 넷플릭스 카탈로그</div></div>
         <div class="arw">→</div>
         <div class="step"><div class="s">02 대조</div><div class="v">한국 기준</div><div class="c">한국 카탈로그와 비교해 ‘미제공’ 판별</div></div>
         <div class="arw">→</div>
-        <div class="step"><div class="s">03 정규화</div><div class="v">26,961 → 1,640</div><div class="c">나라별 중복 제거, 고유 작품 1벌로</div></div>
+        <div class="step"><div class="s">03 정규화</div><div class="v">204,286 → 13,322</div><div class="c">나라별 중복 제거, 고유 작품 1벌로</div></div>
         <div class="arw">→</div>
-        <div class="step"><div class="s">04 보강</div><div class="v">등급 1,571편</div><div class="c">연령등급 추가 수집·매핑</div></div>
+        <div class="step"><div class="s">04 보강</div><div class="v">등급 4,992편</div><div class="c">연령등급 추가 수집·매핑</div></div>
       </div>
       <div class="grid3" style="margin-top:8px">
-        <div class="card"><div class="body"><b class="gold">6.3MB → 1.27MB</b><br><span class="muted">중복 제거로 5배 경량화, 로딩 최적화</span></div></div>
+        <div class="card"><div class="body"><b class="gold">204,286행 → 13,322편</b><br><span class="muted">나라별 중복 93% 제거로 정규화</span></div></div>
         <div class="card"><div class="body"><b>고유키 = (미디어, TMDB ID)</b><br><span class="muted">나라는 인덱스로 참조해 정규화</span></div></div>
         <div class="card"><div class="body"><b>사전 집계 내장</b><br><span class="muted">장르·연도·언어·독점률 랭킹까지 미리 계산</span></div></div>
       </div>
@@ -284,7 +284,7 @@
   </section>
 
   <!-- 8 · 차트1 [기준3] -->
-  <section class="slide" id="s8" data-notes="[평가기준 3 — 적합한 차트] 메시지에 맞는 막대차트. 왼쪽: 한국 대비 독점 작품이 많은 나라 랭킹(미국 381편이 최다). 오른쪽: 미제공작이 몰린 장르(드라마·코미디 순). ‘한국이 뭘 놓치고 있나’를 한눈에.">
+  <section class="slide" id="s8" data-notes="[평가기준 3 — 적합한 차트] 메시지에 맞는 막대차트. 왼쪽: 한국 대비 독점 작품이 많은 나라 랭킹(프랑스 3,730편이 최다, 상위권이 유럽에 쏠림). 오른쪽: 미제공작이 몰린 장르(드라마·코미디 순). ‘한국이 뭘 놓치고 있나’를 한눈에.">
     <div class="wrap cols" style="align-items:start">
       <div class="card">
         <div class="charttitle"><span class="t">콘텐츠 부자 나라 TOP 8</span><span class="u">편 · 한국 미제공</span></div>
@@ -309,10 +309,10 @@
         <div class="eyebrow"><span class="dot"></span> 한눈에 보는 특징</div>
         <h3 class="h2">최신작일수록<br>더 많이 <span class="red">놓친다</span></h3>
         <div class="chips">
-          <span class="chip on">15세 621</span><span class="chip">19세 417</span>
-          <span class="chip">12세 332</span><span class="chip">전체 201</span>
+          <span class="chip on">15세 2,076</span><span class="chip">19세 1,359</span>
+          <span class="chip">12세 931</span><span class="chip">전체 626</span>
         </div>
-        <p class="body muted">연령등급 분포 · 1,571편 기준</p>
+        <p class="body muted">연령등급 분포 · 4,992편 기준</p>
       </div>
     </div>
   </section>
@@ -369,13 +369,13 @@
   </section>
 
   <!-- 13 · AI 활용 [기준7] -->
-  <section class="slide" id="s13" data-notes="[평가기준 7 — AI 활용] 구체적으로. Claude(Opus)와 페어로: ① 파이썬 데이터 파이프라인(수집·정규화) 설계·작성 ② 127개국 연령등급 병렬 수집 스크립트 ③ D3 지도·필터·대시보드까지 웹앱 전체 구현 ④ 데이터 정합성·핵심 로직 검증. ‘무엇을 어떻게 시켰는지’를 강조.">
+  <section class="slide" id="s13" data-notes="[평가기준 7 — AI 활용] 구체적으로. Claude(Opus)와 페어로: ① 파이썬 데이터 파이프라인(수집·정규화) 설계·작성 ② 126개국 연령등급 병렬 수집 스크립트 ③ D3 지도·필터·대시보드까지 웹앱 전체 구현 ④ 데이터 정합성·핵심 로직 검증. ‘무엇을 어떻게 시켰는지’를 강조.">
     <div class="wrap stack">
       <div class="eyebrow"><span class="dot"></span> AI 활용 <b>· 평가기준 7</b></div>
       <h3 class="h2">Claude와 <span class="red">페어 프로그래밍</span></h3>
       <div class="taglist">
-        <div class="item"><span class="n">01</span><span class="tx"><b>데이터 파이프라인 설계·작성</b> — TMDB 수집, 한국 대조, 26,961행 → 1,640편 정규화 스크립트</span></div>
-        <div class="item"><span class="n">02</span><span class="tx"><b>연령등급 병렬 수집</b> — 1,640편 등급을 멀티스레드로 수집·한국식 매핑</span></div>
+        <div class="item"><span class="n">01</span><span class="tx"><b>데이터 파이프라인 설계·작성</b> — TMDB 수집, 한국 대조, 204,286행 → 13,322편 정규화 스크립트</span></div>
+        <div class="item"><span class="n">02</span><span class="tx"><b>연령등급 병렬 수집</b> — 13,322편 대상 등급을 멀티스레드로 수집·한국식 매핑</span></div>
         <div class="item"><span class="n">03</span><span class="tx"><b>웹앱 전체 구현</b> — D3 지도·코로플레스, 복합 필터, 인사이트 대시보드, 찜·여권·상세 모달</span></div>
         <div class="item"><span class="n">04</span><span class="tx"><b>검증·배포</b> — 데이터 정합성·핵심 로직 스모크 테스트, Git 커밋 & Vercel 배포까지</span></div>
       </div>
@@ -469,9 +469,9 @@
     if(Math.abs(dx)>50){dx<0?next():prev()}x0=null;});
 
   /* ---- 차트 데이터 (실제 수치) ---- */
-  const RANK=[["미국",381],["캐나다",318],["스위스",302],["프랑스령 기아나",290],["호주",286],["일본",285],["벨기에",281],["멕시코",279]];
-  const GENRE=[["드라마",644],["코미디",579],["액션",433],["스릴러",354],["애니메이션",298],["모험",278],["범죄",277],["판타지",193]];
-  const YEAR=[[2000,22],[2001,31],[2002,31],[2003,33],[2004,38],[2005,38],[2006,43],[2007,47],[2008,33],[2009,38],[2010,39],[2011,50],[2012,47],[2013,64],[2014,62],[2015,64],[2016,69],[2017,65],[2018,66],[2019,56],[2020,36],[2021,56],[2022,80],[2023,89],[2024,90],[2025,81],[2026,31]];
+  const RANK=[["프랑스",3730],["슬로바키아",3400],["네덜란드",3349],["아이슬란드",3312],["불가리아",3309],["슬로베니아",3284],["체코",3276],["스페인",3235]];
+  const GENRE=[["드라마",5863],["코미디",4595],["스릴러",2245],["로맨스",1778],["범죄",1625],["액션",1600],["애니메이션",1088],["TV 영화",1043]];
+  const YEAR=[[2000,92],[2001,129],[2002,123],[2003,138],[2004,176],[2005,163],[2006,172],[2007,199],[2008,204],[2009,230],[2010,233],[2011,269],[2012,256],[2013,335],[2014,379],[2015,419],[2016,494],[2017,605],[2018,658],[2019,713],[2020,525],[2021,679],[2022,972],[2023,1125],[2024,1053],[2025,820],[2026,167]];
 
   let barsDone=false;
   function barRows(el,rows,cls){
