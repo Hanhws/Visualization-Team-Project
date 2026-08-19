@@ -177,6 +177,32 @@
   .notes .c b{color:var(--ink)}
   .clickzone{position:fixed;top:0;bottom:0;width:22%;z-index:50}
   .clickzone.left{left:0;cursor:w-resize} .clickzone.right{right:0;cursor:e-resize}
+
+  /* 통념 뒤집기 (로슬링式 리빌) */
+  .reveal-vs{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(18px,3vw,48px);align-items:center;margin-top:10px}
+  @media(max-width:820px){.reveal-vs{grid-template-columns:1fr;gap:16px}}
+  .guess{background:var(--panel);border:1px dashed var(--line2);border-radius:16px;padding:clamp(20px,2.4vw,30px);text-align:center;opacity:.72}
+  .guess .lab{font-size:var(--fs-label);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .guess .flag{font-size:clamp(30px,4vw,54px);margin:8px 0}
+  .guess .nm{font-size:clamp(20px,2vw,28px);font-weight:800}
+  .guess .rk{color:var(--muted);font-size:14px;margin-top:6px}
+  .guess.real{border-style:solid;border-color:var(--red);opacity:1;box-shadow:0 0 44px rgba(229,9,20,.22)}
+  .guess.real .nm{color:var(--red)}
+  .guess .big{font-size:clamp(34px,4.6vw,64px);font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;margin-top:4px}
+  .reveal-vs .arw{font-size:26px;font-weight:900;color:var(--red)}
+
+  /* 숨은 명작 실물 (잡스式 show-don't-tell) */
+  .gemgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+  @media(max-width:820px){.gemgrid{grid-template-columns:1fr 1fr}}
+  .gem{background:linear-gradient(160deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:14px;
+    padding:18px 18px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
+  .gem .rt{font-size:clamp(26px,3vw,40px);font-weight:900;color:var(--gold);letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+  .gem .rt small{font-size:.4em;color:var(--muted);font-weight:800;margin-left:4px}
+  .gem .tt{font-size:clamp(15px,1.5vw,20px);font-weight:800;line-height:1.2;text-wrap:balance}
+  .gem .yr{font-size:12.5px;color:var(--muted)}
+  .gem .scarce{margin-top:4px;align-self:flex-start;font-size:12px;font-weight:800;color:#fff;background:var(--red);
+    border-radius:999px;padding:4px 11px}
+  .gem .scarce.soft{background:transparent;color:var(--muted);border:1px solid var(--line2)}
 </style>
 
 <div class="deck" id="deck">
@@ -283,8 +309,32 @@
     </div>
   </section>
 
+  <!-- 7.5 · 통념 뒤집기 [로슬링] -->
+  <section class="slide" id="sMyth" data-notes="[로슬링式 통념 뒤집기] 질문부터 던진다 — ‘한국이 제일 많이 놓치는 나라, 어디일 것 같으세요?’ 관객이 ‘미국’을 떠올리게 두고 (…) 반전: 미국은 42위. 1위는 프랑스, 상위권이 죄다 유럽. 바로 다음 차트가 그 증거다.">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> 잠깐, 맞혀보세요</div>
+      <h2 class="h1">한국이 가장 많이 놓치는 나라,<br><span class="red">어디일까요?</span></h2>
+      <div class="reveal-vs">
+        <div class="guess">
+          <div class="lab">다들 이렇게 답합니다</div>
+          <div class="flag">🇺🇸</div>
+          <div class="nm">미국</div>
+          <div class="rk">…실제로는 <b>42위</b> · 1,675편</div>
+        </div>
+        <div class="arw">→</div>
+        <div class="guess real">
+          <div class="lab">실제 1위</div>
+          <div class="flag">🇫🇷</div>
+          <div class="nm">프랑스</div>
+          <div class="big">3,730<small style="font-size:.4em;color:var(--muted)">편</small></div>
+        </div>
+      </div>
+      <p class="body muted">상위권은 <b class="red">슬로바키아·네덜란드·아이슬란드</b>… 죄다 유럽이에요. (일본도 36위) 우리가 놓친 건 미국이 아니라 <b>유럽</b>이었습니다.</p>
+    </div>
+  </section>
+
   <!-- 8 · 차트1 [기준3] -->
-  <section class="slide" id="s8" data-notes="[평가기준 3 — 적합한 차트] 메시지에 맞는 막대차트. 왼쪽: 한국 대비 독점 작품이 많은 나라 랭킹(프랑스 3,730편이 최다, 상위권이 유럽에 쏠림). 오른쪽: 미제공작이 몰린 장르(드라마·코미디 순). ‘한국이 뭘 놓치고 있나’를 한눈에.">
+  <section class="slide" id="s8" data-notes="[평가기준 3 · 로슬링式 중계] 앞 슬라이드의 ‘답’을 차트로 증명. 왼쪽 막대가 차오를 때 1위(프랑스)를 손으로 짚고 → 상위권을 쓸며 ‘보세요, 죄다 유럽’ → ‘미국은 42위’ 통념 뒤집기. 오른쪽: 드라마·코미디에 쏠림. 아래 캡션: 상위 10국 평균 3,327편.">
     <div class="wrap cols" style="align-items:start">
       <div class="card">
         <div class="charttitle"><span class="t">콘텐츠 부자 나라 TOP 8</span><span class="u">편 · 한국 미제공</span></div>
@@ -294,6 +344,7 @@
         <div class="charttitle"><span class="t">장르별 미제공 작품</span><span class="u">편</span></div>
         <div class="bars" id="genreBars"></div>
       </div>
+      <p class="body" style="grid-column:1/-1;margin-top:6px;text-align:center">상위 <b class="red">10개국</b>엔 한국에 없는 작품이 <b class="red">평균 3,327편</b> — 전체 중위값(1,447편)의 2배가 넘습니다. <b>한 나라 계정만 열어도 3천 편이 열려요.</b></p>
     </div>
   </section>
 
@@ -314,6 +365,23 @@
         </div>
         <p class="body muted">연령등급 분포 · 4,992편 기준</p>
       </div>
+    </div>
+  </section>
+
+  <!-- 9.5 · 숨은 명작 실물 [잡스] -->
+  <section class="slide" id="sGems" data-notes="[잡스式 show-dont-tell] 숫자 말고 실물. ‘이런 작품들이 지금 한국 넷플엔 없습니다’ 하고 실제 제목을 하나씩 짚는다. 쉰들러 리스트·시티 오브 갓은 전 세계 딱 1개국에만, 너의 이름은은 3개국에만. ‘데이터 기준’이라는 말 한 번 넣어 표본 caveat 방어. 곧바로 다음 슬라이드에서 ‘직접 찾아봅시다’로 데모 전환.">
+    <div class="wrap stack">
+      <div class="eyebrow"><span class="dot"></span> 숫자 말고, 실물로 <b>· 저희 데이터 기준</b></div>
+      <h3 class="h2">지금 한국 넷플엔 <span class="red">없는</span> 명작들</h3>
+      <div class="gemgrid">
+        <div class="gem"><div class="rt">8.6<small>★</small></div><div class="tt">쉰들러 리스트</div><div class="yr">1993 · 드라마</div><div class="scarce">전 세계 1개국에만</div></div>
+        <div class="gem"><div class="rt">8.5<small>★</small></div><div class="tt">인터스텔라</div><div class="yr">2014 · SF</div><div class="scarce soft">29개국에서만</div></div>
+        <div class="gem"><div class="rt">8.5<small>★</small></div><div class="tt">다크 나이트</div><div class="yr">2008 · 액션</div><div class="scarce soft">7개국에서만</div></div>
+        <div class="gem"><div class="rt">8.5<small>★</small></div><div class="tt">포레스트 검프</div><div class="yr">1994 · 드라마</div><div class="scarce soft">7개국에서만</div></div>
+        <div class="gem"><div class="rt">8.5<small>★</small></div><div class="tt">너의 이름은.</div><div class="yr">2016 · 애니</div><div class="scarce">전 세계 3개국에만</div></div>
+        <div class="gem"><div class="rt">8.4<small>★</small></div><div class="tt">시티 오브 갓</div><div class="yr">2002 · 범죄</div><div class="scarce">전 세계 1개국에만</div></div>
+      </div>
+      <p class="body muted">평점 8점 이상 명작만 <b class="gold">1,046편.</b> 그중 상당수가 <b class="red">한두 나라에만</b> 숨어 있어요. — 그럼, 직접 찾아볼까요?</p>
     </div>
   </section>
 
@@ -418,7 +486,7 @@
 
   <!-- 크롬 -->
   <div class="progress" id="progress"></div>
-  <div class="counter" id="counter"><b>01</b> / 15</div>
+  <div class="counter" id="counter"><b>01</b> / 17</div>
   <div class="brandtag">NERFLE</div>
   <div class="navhint" id="navhint"><span><kbd>←</kbd> <kbd>→</kbd> 이동</span><span><kbd>N</kbd> 발표자 노트</span><span><kbd>F</kbd> 전체화면</span></div>
   <div class="clickzone left" id="zoneL"></div>
