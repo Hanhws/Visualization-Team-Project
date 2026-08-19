@@ -178,19 +178,6 @@
   .clickzone{position:fixed;top:0;bottom:0;width:22%;z-index:50}
   .clickzone.left{left:0;cursor:w-resize} .clickzone.right{right:0;cursor:e-resize}
 
-  /* 통념 뒤집기 (로슬링式 리빌) */
-  .reveal-vs{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(18px,3vw,48px);align-items:center;margin-top:10px}
-  @media(max-width:820px){.reveal-vs{grid-template-columns:1fr;gap:16px}}
-  .guess{background:var(--panel);border:1px dashed var(--line2);border-radius:16px;padding:clamp(20px,2.4vw,30px);text-align:center;opacity:.72}
-  .guess .lab{font-size:var(--fs-label);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-  .guess .flag{font-size:clamp(30px,4vw,54px);margin:8px 0}
-  .guess .nm{font-size:clamp(20px,2vw,28px);font-weight:800}
-  .guess .rk{color:var(--muted);font-size:14px;margin-top:6px}
-  .guess.real{border-style:solid;border-color:var(--red);opacity:1;box-shadow:0 0 44px rgba(229,9,20,.22)}
-  .guess.real .nm{color:var(--red)}
-  .guess .big{font-size:clamp(34px,4.6vw,64px);font-weight:900;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;margin-top:4px}
-  .reveal-vs .arw{font-size:26px;font-weight:900;color:var(--red)}
-
   /* 숨은 명작 실물 (잡스式 show-don't-tell) */
   .gemgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
   @media(max-width:820px){.gemgrid{grid-template-columns:1fr 1fr}}
@@ -309,42 +296,18 @@
     </div>
   </section>
 
-  <!-- 7.5 · 통념 뒤집기 [로슬링] -->
-  <section class="slide" id="sMyth" data-notes="[로슬링式 통념 뒤집기] 질문부터 던진다 — ‘한국이 제일 많이 놓치는 나라, 어디일 것 같으세요?’ 관객이 ‘미국’을 떠올리게 두고 (…) 반전: 미국은 42위. 1위는 프랑스, 상위권이 죄다 유럽. 바로 다음 차트가 그 증거다.">
-    <div class="wrap stack">
-      <div class="eyebrow"><span class="dot"></span> 잠깐, 맞혀보세요</div>
-      <h2 class="h1">한국이 가장 많이 놓치는 나라,<br><span class="red">어디일까요?</span></h2>
-      <div class="reveal-vs">
-        <div class="guess">
-          <div class="lab">다들 이렇게 답합니다</div>
-          <div class="flag">🇺🇸</div>
-          <div class="nm">미국</div>
-          <div class="rk">…실제로는 <b>42위</b> · 1,675편</div>
-        </div>
-        <div class="arw">→</div>
-        <div class="guess real">
-          <div class="lab">실제 1위</div>
-          <div class="flag">🇫🇷</div>
-          <div class="nm">프랑스</div>
-          <div class="big">3,730<small style="font-size:.4em;color:var(--muted)">편</small></div>
-        </div>
-      </div>
-      <p class="body muted">상위권은 <b class="red">슬로바키아·네덜란드·아이슬란드</b>… 죄다 유럽이에요. (일본도 36위) 우리가 놓친 건 미국이 아니라 <b>유럽</b>이었습니다.</p>
-    </div>
-  </section>
-
   <!-- 8 · 차트1 [기준3] -->
-  <section class="slide" id="s8" data-notes="[평가기준 3 · 로슬링式 중계] 앞 슬라이드의 ‘답’을 차트로 증명. 왼쪽 막대가 차오를 때 1위(프랑스)를 손으로 짚고 → 상위권을 쓸며 ‘보세요, 죄다 유럽’ → ‘미국은 42위’ 통념 뒤집기. 오른쪽: 드라마·코미디에 쏠림. 아래 캡션: 상위 10국 평균 3,327편.">
-    <div class="wrap cols" style="align-items:start">
+  <section class="slide" id="s8" data-notes="[평가기준 3] 한국이 놓친 게 어디 쏠려 있나 — 장르 분포. 막대가 차오를 때 상위 둘(드라마·코미디)을 손으로 짚으며 ‘놓친 게 아무 데나 흩어진 게 아니라 특정 장르에 확실히 몰려 있다’. 다음 슬라이드(연도 추이)로 자연스럽게 연결.">
+    <div class="wrap cols" style="align-items:center">
       <div class="card">
-        <div class="charttitle"><span class="t">콘텐츠 부자 나라 TOP 8</span><span class="u">편 · 한국 미제공</span></div>
-        <div class="bars" id="rankBars"></div>
-      </div>
-      <div class="card">
-        <div class="charttitle"><span class="t">장르별 미제공 작품</span><span class="u">편</span></div>
+        <div class="charttitle"><span class="t">장르별 미제공 작품 TOP 8</span><span class="u">편 · 한국 미제공</span></div>
         <div class="bars" id="genreBars"></div>
       </div>
-      <p class="body" style="grid-column:1/-1;margin-top:6px;text-align:center">상위 <b class="red">10개국</b>엔 한국에 없는 작품이 <b class="red">평균 3,327편</b> — 전체 중위값(1,447편)의 2배가 넘습니다. <b>한 나라 계정만 열어도 3천 편이 열려요.</b></p>
+      <div class="stack">
+        <div class="eyebrow"><span class="dot"></span> 한눈에 보는 특징</div>
+        <h3 class="h2">한국이 놓친 건<br><span class="red">드라마·코미디</span>에 쏠려 있다</h3>
+        <p class="body muted">전체 <b>1만 3,322편</b> 중 <b class="red">드라마 5,863 · 코미디 4,595편.</b> 미제공작이 아무 데나 흩어진 게 아니라 <b>특정 장르에 확실히 몰려</b> 있어요.</p>
+      </div>
     </div>
   </section>
 
@@ -486,7 +449,7 @@
 
   <!-- 크롬 -->
   <div class="progress" id="progress"></div>
-  <div class="counter" id="counter"><b>01</b> / 17</div>
+  <div class="counter" id="counter"><b>01</b> / 16</div>
   <div class="brandtag">NERFLE</div>
   <div class="navhint" id="navhint"><span><kbd>←</kbd> <kbd>→</kbd> 이동</span><span><kbd>N</kbd> 발표자 노트</span><span><kbd>F</kbd> 전체화면</span></div>
   <div class="clickzone left" id="zoneL"></div>
@@ -537,7 +500,6 @@
     if(Math.abs(dx)>50){dx<0?next():prev()}x0=null;});
 
   /* ---- 차트 데이터 (실제 수치) ---- */
-  const RANK=[["프랑스",3730],["슬로바키아",3400],["네덜란드",3349],["아이슬란드",3312],["불가리아",3309],["슬로베니아",3284],["체코",3276],["스페인",3235]];
   const GENRE=[["드라마",5863],["코미디",4595],["스릴러",2245],["로맨스",1778],["범죄",1625],["액션",1600],["애니메이션",1088],["TV 영화",1043]];
   const YEAR=[[2000,92],[2001,129],[2002,123],[2003,138],[2004,176],[2005,163],[2006,172],[2007,199],[2008,204],[2009,230],[2010,233],[2011,269],[2012,256],[2013,335],[2014,379],[2015,419],[2016,494],[2017,605],[2018,658],[2019,713],[2020,525],[2021,679],[2022,972],[2023,1125],[2024,1053],[2025,820],[2026,167]];
 
@@ -550,7 +512,6 @@
   }
   function drawBars(){
     if(barsDone)return;barsDone=true;
-    barRows(document.getElementById('rankBars'),RANK,'');
     barRows(document.getElementById('genreBars'),GENRE,'g1');
     requestAnimationFrame(()=>requestAnimationFrame(()=>{
       document.querySelectorAll('#s8 .fil').forEach(f=>f.style.width=f.dataset.w+'%');
