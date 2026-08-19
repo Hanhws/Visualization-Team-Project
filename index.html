@@ -138,11 +138,32 @@
   .empty{color:#888;text-align:center;margin:50px 0;font-size:15px}
 
   /* ---------------- 지도 ---------------- */
-  #mapSvg{width:100%;height:calc(100vh - 180px);min-height:420px;background:#0b0b0b;border:1px solid var(--line);border-radius:14px}
+  .mapwrap{position:relative}
+  #mapSvg{width:100%;height:calc(100vh - 240px);min-height:420px;background:#0b0b0b;border:1px solid var(--line);border-radius:14px;cursor:grab;touch-action:none}
+  #mapSvg:active{cursor:grabbing}
   .country{stroke:#000;stroke-width:.4px}
   .country.dim{fill:#242424}
-  .country.click{cursor:pointer;transition:fill .15s,transform .15s;transform-box:fill-box;transform-origin:center}
-  .country.click:hover,.country.click.hot{filter:drop-shadow(0 0 6px rgba(229,9,20,.8));transform:scale(1.06)}
+  .country.click{cursor:pointer;transition:fill .15s}
+  .country.click:hover,.country.click.hot{filter:drop-shadow(0 0 6px rgba(229,9,20,.9))}
+  .country.flash{stroke:#fff;stroke-width:1.4px;filter:drop-shadow(0 0 10px rgba(255,255,255,.95));animation:cflash 1.6s ease-out}
+  @keyframes cflash{0%,60%{stroke-opacity:1}100%{stroke-opacity:.3}}
+  /* 지도 툴바 */
+  .map-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 12px}
+  .map-search{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:6px 8px 6px 12px;min-width:280px;flex:1 1 300px;max-width:460px}
+  .map-search .mi{opacity:.65}
+  .map-search input{flex:1;background:transparent;border:0;outline:0;color:#fff;font-size:14px;padding:4px 2px}
+  .map-search input::placeholder{color:var(--muted)}
+  .map-search button{background:var(--nf-red);color:#fff;border:0;border-radius:8px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+  .map-search button:hover{background:var(--nf-red-d)}
+  .map-quick{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .map-quick .qlabel{color:var(--muted);font-size:12px;margin-right:2px}
+  .map-quick .qchip{background:var(--surface-2);border:1px solid var(--line);color:#e8e8e8;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer}
+  .map-quick .qchip:hover{border-color:var(--nf-red);color:#fff}
+  /* 줌 버튼 */
+  .mapzoom{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px;z-index:5}
+  .mapzoom button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:rgba(20,20,20,.9);color:#fff;font-size:20px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+  .mapzoom button:hover{background:var(--nf-red);border-color:var(--nf-red)}
+  .maphint{position:absolute;left:12px;bottom:12px;z-index:5;background:rgba(20,20,20,.82);border:1px solid var(--line);color:var(--muted);font-size:11.5px;padding:6px 11px;border-radius:8px;backdrop-filter:blur(4px);pointer-events:none;transition:opacity .4s}
   .maplegend{display:flex;align-items:center;gap:10px;margin-top:10px;color:var(--muted);font-size:12px;flex-wrap:wrap}
   .legendbar{height:10px;width:160px;border-radius:5px;background:linear-gradient(90deg,#3a1113,#7a1119,#E50914)}
   #tooltip{position:fixed;z-index:60;pointer-events:none;opacity:0;background:var(--nf-red);color:#fff;font-weight:700;
@@ -324,8 +345,25 @@
 <!-- ===================== 지도 ===================== -->
 <section id="map" class="view"><div class="page">
   <div class="h1">나라별 <b>독점 카탈로그</b></div>
-  <div class="sub">색이 진할수록 한국엔 없는 작품이 많은 나라예요. 클릭하면 그 나라 목록을 봅니다.</div>
-  <svg id="mapSvg"></svg>
+  <div class="sub">색이 진할수록 한국엔 없는 작품이 많은 나라예요. 작은 나라는 <b>검색</b>하거나 지도를 <b>휠·드래그로 확대</b>해서 찾으세요.</div>
+  <div class="map-toolbar">
+    <div class="map-search">
+      <span class="mi">🔎</span>
+      <input id="mapSearch" list="mapCountryList" placeholder="나라 이름으로 찾기 (예: 리히텐슈타인)" autocomplete="off">
+      <datalist id="mapCountryList"></datalist>
+      <button id="mapSearchGo" type="button">이동</button>
+    </div>
+    <div class="map-quick" id="mapQuick"></div>
+  </div>
+  <div class="mapwrap">
+    <svg id="mapSvg"></svg>
+    <div class="mapzoom">
+      <button id="zoomIn" type="button" title="확대">＋</button>
+      <button id="zoomOut" type="button" title="축소">－</button>
+      <button id="zoomReset" type="button" title="전체 보기">⟳</button>
+    </div>
+    <div class="maphint" id="mapHint">휠로 확대 · 드래그로 이동 · 더블클릭으로 그 나라 확대</div>
+  </div>
   <div class="maplegend">
     <span>적음</span><span class="legendbar"></span><span>많음 (한국 미제공 작품 수)</span>
     <span style="margin-left:auto">🔴 클릭해서 나라별 작품 보기</span>
@@ -742,6 +780,34 @@ function drawHomeMaps(){
 function initMap(){
   loadWorld().then(feats=>{
     drawMap("#mapSvg",feats,{interactive:true,choropleth:true});
+    // 검색 자동완성 목록 (미제공 많은 순)
+    const dl=$("#mapCountryList");
+    if(dl && !dl._filled){
+      dl.innerHTML=[...C].sort((a,b)=>b.n-a.n)
+        .map(c=>`<option value="${esc(c.name)}">한국 미제공 ${c.n.toLocaleString()}편</option>`).join("");
+      dl._filled=true;
+    }
+    // 작은 나라 바로가기 (지도에서 클릭하기 힘든 소국, 데이터 보유국만)
+    const quick=$("#mapQuick");
+    if(quick && !quick._filled){
+      const TINY=["LI","MC","SM","AD","MT","LU","SG","BM"]; // 리히텐슈타인·모나코·산마리노·안도라·몰타·룩셈부르크·싱가포르·버뮤다
+      const small=TINY.filter(cc=>codeToIdx[cc]!=null);
+      quick.innerHTML=`<span class="qlabel">찾기 힘든 작은 나라 →</span>`+
+        small.map(cc=>`<span class="qchip" data-code="${cc}">${esc(C[codeToIdx[cc]].name)}</span>`).join("");
+      quick.querySelectorAll(".qchip").forEach(el=>
+        el.onclick=()=>zoomToCountry(el.dataset.code));
+      quick._filled=true;
+    }
+    // 버튼·검색 이벤트 (1회 바인딩)
+    if(!initMap._bound){
+      $("#zoomIn").onclick=()=>mapZoomBy(1.6);
+      $("#zoomOut").onclick=()=>mapZoomBy(1/1.6);
+      $("#zoomReset").onclick=mapZoomReset;
+      $("#mapSearchGo").onclick=mapSearchSubmit;
+      $("#mapSearch").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); mapSearchSubmit(); }});
+      $("#mapSearch").addEventListener("change",mapSearchSubmit);
+      initMap._bound=true;
+    }
   });
 }
 function drawMap(sel,feats,opt={}){
@@ -765,10 +831,55 @@ function drawMap(sel,feats,opt={}){
         tt.innerHTML=`${esc(c.name)}<small>한국 미제공 ${c.n}편 · 클릭</small>`; tt.style.opacity=1; })
       .on("mousemove",ev=>{ tt.style.left=ev.clientX+"px"; tt.style.top=ev.clientY+"px"; })
       .on("mouseleave",function(){ d3.select(this).classed("hot",false); tt.style.opacity=0; })
-      .on("click",(ev,d)=>go("#/country/"+idToCode[String(parseInt(d.id,10))]));
+      .on("click",function(ev,d){ if(ev.defaultPrevented) return; go("#/country/"+idToCode[String(parseInt(d.id,10))]); })
+      .on("dblclick",function(ev,d){ ev.preventDefault(); zoomToCountry(idToCode[String(parseInt(d.id,10))]); });
+    // 줌/팬
+    const zoom=d3.zoom().scaleExtent([1,40]).on("zoom",ev=>{
+      g.attr("transform",ev.transform);
+      paths.style("stroke-width",(0.4/ev.transform.k)+"px");
+      const hint=$("#mapHint"); if(hint) hint.style.opacity=ev.transform.k>1.05?0:1;
+    });
+    svg.call(zoom).on("dblclick.zoom",null);
+    mapState={svg,g,path,paths,zoom,w,h,byCode:{}};
+    feats.forEach(f=>{ const cc=idToCode[String(parseInt(f.id,10))]; if(cc) mapState.byCode[cc]=f; });
   }
   if(opt.globe) d3.timer(el=>{ proj.rotate([el*0.02-60,-15]); g.selectAll("path").attr("d",path); });
   if(opt.spin) d3.timer(el=>{ proj.rotate([el*0.012,0]); g.selectAll("path").attr("d",path); });
+}
+/* ---- 지도 줌 상태·헬퍼 ---- */
+let mapState=null;
+function zoomToCountry(code,flash=true){
+  if(!mapState||!code) return;
+  const f=mapState.byCode[code]; if(!f) return;
+  const {svg,path,zoom,w,h}=mapState;
+  const b=path.bounds(f); let dx=b[1][0]-b[0][0], dy=b[1][1]-b[0][1];
+  let cx=(b[0][0]+b[1][0])/2, cy=(b[0][1]+b[1][1])/2, k;
+  if(!(dx>0.5)||!(dy>0.5)||!isFinite(cx)||!isFinite(cy)){
+    // 일부 국가는 bounds가 붕괴됨 → 중심점 기준 고정 배율로 대체
+    const c2=path.centroid(f); cx=c2[0]; cy=c2[1]; k=6;
+    if(!isFinite(cx)||!isFinite(cy)) return;
+  } else {
+    k=Math.max(2,Math.min(40, 0.42/Math.max(dx/w, dy/h)));
+  }
+  const t=d3.zoomIdentity.translate(w/2-k*cx, h/2-k*cy).scale(k);
+  svg.transition().duration(760).call(zoom.transform, t);
+  if(flash){
+    mapState.paths.classed("flash",false);
+    const sel=mapState.paths.filter(d=>idToCode[String(parseInt(d.id,10))]===code).raise().classed("flash",true);
+    setTimeout(()=>sel.classed("flash",false),1700);
+  }
+}
+function mapZoomBy(factor){ if(!mapState) return;
+  mapState.svg.transition().duration(260).call(mapState.zoom.scaleBy,factor); }
+function mapZoomReset(){ if(!mapState) return;
+  mapState.svg.transition().duration(500).call(mapState.zoom.transform,d3.zoomIdentity); }
+function findCountryByName(q){ if(!q) return null; q=q.trim().toLowerCase();
+  let hit=C.find(c=>c.name.toLowerCase()===q);
+  if(!hit) hit=C.find(c=>c.name.toLowerCase().includes(q));
+  return hit||null; }
+function mapSearchSubmit(){
+  const hit=findCountryByName($("#mapSearch").value);
+  if(hit){ zoomToCountry(hit.code); } else { $("#mapSearch").focus(); }
 }
 
 /* ============================================================
