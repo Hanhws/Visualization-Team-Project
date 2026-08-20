@@ -13,3 +13,13 @@ __pycache__/
 
 # 전체 카탈로그 원본(24MB, 한국 포함) — 용량 커서 제외. 팀 공유는 nerfle_only_abroad.csv 사용
 data/nerfle_titles.csv
+
+# 발표용 대용량 원본 — 최종 광고영상만 커밋
+영상/*
+!영상/너플_수정완료.mp4
+이미지 파일/
+
+# 편집 전 백업본
+data.old.js
+gen_data.old.py
+index.old.html
