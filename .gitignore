@@ -11,8 +11,10 @@ __pycache__/
 # OS
 .DS_Store
 
-# 전체 카탈로그 원본(24MB, 한국 포함) — 용량 커서 제외. 팀 공유는 nerfle_only_abroad.csv 사용
+# 대용량 파이프라인 데이터 — 사이트는 data.js 만 사용하므로 리포에서 제외(로컬 유지)
 data/nerfle_titles.csv
+data/nerfle_only_abroad.csv
+data/dashboard_data.json
 
 # 발표용 대용량 원본 — 최종 광고영상만 커밋
 영상/*
